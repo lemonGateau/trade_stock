@@ -1,11 +1,10 @@
 # coding utf-8
-
-from cgitb import small
 from pandas_datareader import data
 import pandas
 import datetime
 import matplotlib.pyplot as plt
-import numpy as np
+from smaCross import SmaCross
+from macdCross import MacdCross
 from util import *
 from print_funcs import *
 
@@ -35,43 +34,19 @@ def main():
         # print(df[symbol])
         # print(df[symbol].info())
 
+        sma_cross  = SmaCross(df[symbol]["short_sma"], df[symbol]["long_sma"])
+        macd_cross = MacdCross(df[symbol]["macd"], df[symbol]["signal"])
+
         sell_dict = {}
         buy_dict  = {}
 
         print(symbol)
         print("\nindex\t      short  long  price  side\n")
         for i in range(1, len(df[symbol]["Adj Close"])):
-            #"""
-            # sma  ゴールデンクロス
-            if is_crossover(df[symbol]["short_sma"][i-1:i+1], df[symbol]["long_sma"][i-1:i+1]):
-                buy_dict[df[symbol].index[i]] = int(df[symbol]["Adj Close"][i])
+            #sma_cross.execute(i)
+            macd_cross.execute(i)
 
-                print_df_date(df[symbol].index[i])
-                print_prices((df[symbol]["short_sma"][i], df[symbol]["long_sma"][i], df[symbol]["Adj Close"][i]))
- 
-            # sma  デッドクロス
-            elif is_crossover(df[symbol]["long_sma"][i-1:i+1], df[symbol]["short_sma"][i-1:i+1]):
-                sell_dict[df[symbol].index[i]] = int(df[symbol]["Adj Close"][i])
 
-                print_df_date(df[symbol].index[i])
-                print_prices((df[symbol]["short_sma"][i], df[symbol]["long_sma"][i], df[symbol]["Adj Close"][i]))
-
-            #"""
-            """
-            # macd ゴールデンクロス
-            if is_crossover(df[symbol]["macd"][i-1:i+1], df[symbol]["signal"][i-1:i+1]):
-                buy_dict[df[symbol].index[i]] = int(df[symbol]["Adj Close"][i])
-
-                # print_df_date(df[symbol].index[i])
-                # print_prices((df[symbol]["macd"][i], df[symbol]["signal"][i], df[symbol]["Adj Close"][i]))
-
-            # macd デッドクラス
-            elif is_crossover(df[symbol]["signal"][i-1:i+1], df[symbol]["macd"][i-1:i+1]):
-                sell_dict[df[symbol].index[i]] = int(df[symbol]["Adj Close"][i])
-
-                # print_df_date(df[symbol].index[i])
-                # print_prices((df[symbol]["macd"][i], df[symbol]["signal"][i], df[symbol]["Adj Close"][i]))
-            #"""
 
 
         # 取引結果等表示
@@ -89,8 +64,6 @@ def main():
 def generate_sma(df_prices, window):
     return df_prices.rolling(window).mean()
 
-
-# Tips: nanが含まれる不等式は必ずFalse
 def is_crossover(ma1_list, ma2_list):
     ''' 直近値で ma1 が ma2 を上回るか '''
     if (len(ma1_list) < 2) or (len(ma1_list) < 2):
