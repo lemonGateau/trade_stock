@@ -6,7 +6,7 @@ class MacdCross:
         self.macd   = macd
         self.signal = signal
 
-    def execute(self, i):
+    def trade(self, i):
         if is_crossover(self.macd[i-1:i+1], self.signal[i-1:i+1]):
             self.buy(i)
 

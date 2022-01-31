@@ -6,7 +6,7 @@ class SmaCross:
         self.sma_short = sma_short
         self.sma_long  = sma_long
 
-    def execute(self, i):
+    def trade(self, i):
         if is_crossover(self.sma_short[i-1:i+1], self.sma_long[i-1:i+1]):
             self.buy(i)
 

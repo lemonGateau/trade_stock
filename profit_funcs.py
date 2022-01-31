@@ -1,10 +1,10 @@
 from util import *
 
+def compute_total_profit(sell_dic, buy_dic):
+    ''' ToDo: length が異なる場合の計算 '''
+    sell_list = list(sell_dic.values())
+    buy_list = list(buy_dic.values()) 
 
-def compute_total_profit(sell_dict, buy_dict):
-    s = list(sell_dict.values())
-    b = list(buy_dict.values()) 
+    l = confirm_smaller_length(sell_dic, buy_dic)
 
-    small_len = confirm_smaller_length(sell_dict, buy_dict)
-
-    return sum(s[-small_len:]) - sum(b[-small_len:])
+    return int(sum(sell_list[-l:]) - sum(buy_list[-l:]))

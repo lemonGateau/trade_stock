@@ -1,7 +1,7 @@
 from profit_funcs import compute_total_profit
 
-def print_df_date(index):
-    print(f'{index.year:>4d}/{index.month:>2d}/{index.day:>2d}', end="  ")
+def print_df_date(df_index):
+    print(f'{df_index.year:>4d}/{df_index.month:>2d}/{df_index.day:>2d}', end="  ")
 
 
 def print_prices(price_list):
@@ -10,21 +10,31 @@ def print_prices(price_list):
 
     print("\n", end="")
 
+def print_order(df_index, order_price, side="sell"):
+    print_df_date(df_index)
+    print(side, end="\t")
+    print_prices([order_price])
 
-def print_trade_hist(trade_dict):
-    for index, price in trade_dict.items():
+
+def print_all_trade_hist(trade_dic):
+    for index, price in trade_dic.items():
         print_df_date(index)
         print_prices([price])
     print("\n", end="")
 
 
-def print_trade_result(sell_dict, buy_dict):
+def print_final_result(sell_dic, buy_dic):
     """ 取引結果表示"""
-    print(f'sell_count: {len(sell_dict)} buy_count: {len(buy_dict)}')
-    print(f'total_profit: {compute_total_profit(sell_dict, buy_dict):>10d}\n')
+    print("="*30)
 
-    print("sell_history: ")
-    print_trade_hist(sell_dict)
-    print("buy_history:")
-    print_trade_hist(buy_dict)
+    print("sell_history :")
+    print_all_trade_hist(sell_dic)
+    print("buy_history  :")
+    print_all_trade_hist(buy_dic)
 
+    print(f'sell_count  : {len(sell_dic)}')
+    print(f'buy_count   : {len(buy_dic)}')
+    print(f'total_profit: {compute_total_profit(sell_dic, buy_dic)}')
+
+    print("="*30)
+    print("\n")
