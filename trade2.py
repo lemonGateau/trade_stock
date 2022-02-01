@@ -1,3 +1,4 @@
+from finalizedprofit import FinalizedProfit
 from pandas_datareader import data
 import pandas
 import datetime
@@ -8,11 +9,10 @@ from indicator_funcs import *
 from plot_funcs import plot_df_sub
 from cross import Cross
 from bollingerBands import BolligerBands
-from simpleStrategy import SimpleStrategy
 
 
 def main():
-    START = datetime.datetime(2018, 7, 28)
+    START = datetime.datetime(2001, 7, 28)
     END   = datetime.datetime.today()
     SYMBOLS = ["^N225"]
     # SYMBOLS = ["4776.T", "4347.T", "8226.T"]
@@ -23,6 +23,9 @@ def main():
     LONG_TERM    = 25
     SIGNAL_TERM  = 9
     B_BANDS_TERM = 25
+
+    PROFIT_RATIO = 0.2
+    LOSS_RATIO   = 0.05
 
     dfs = {}
 
@@ -41,12 +44,16 @@ def main():
         sma_cross  = Cross(df["sma_short"], df["sma_long"])
         ema_cross  = Cross(df["ema_short"], df["ema_long"])
         macd_cross = Cross(df["macd"], df["signal"])
+
         b_bands    = BolligerBands(df["Adj Close"], B_BANDS_TERM)
 
         df["upper"] = b_bands.get_upper()
         df["lower"] = b_bands.get_lower()
 
-        simpler = SimpleStrategy(profit_ratio=0.2, loss_ratio=0.05)
+        simpler_s = FinalizedProfit(PROFIT_RATIO, LOSS_RATIO, df["Adj Close"], add_strategy=sma_cross)
+        simpler_e = FinalizedProfit(PROFIT_RATIO, LOSS_RATIO, df["Adj Close"], add_strategy=ema_cross)
+        simpler_m = FinalizedProfit(PROFIT_RATIO, LOSS_RATIO, df["Adj Close"], add_strategy=macd_cross)
+        simpler_b = FinalizedProfit(PROFIT_RATIO, LOSS_RATIO, df["Adj Close"], add_strategy=b_bands)
 
         # 取引シミュレーション
         print(symbol)
@@ -56,6 +63,12 @@ def main():
         simulate_trade(macd_cross, df["Adj Close"])
         simulate_trade(b_bands   , df["Adj Close"])
 
+        simulate_trade(simpler_s , df["Adj Close"])
+        simulate_trade(simpler_e , df["Adj Close"])
+        simulate_trade(simpler_m , df["Adj Close"])
+        simulate_trade(simpler_b , df["Adj Close"])
+
+
 
         # plot_df_sub([df[["Adj Close", "upper", "lower"]]])
         plot_df_sub([df["Adj Close"], df[["macd", "signal"]], df[["Adj Close", "upper", "lower"]]])
@@ -64,6 +77,7 @@ def main():
 
 
 def simulate_trade(strategy, df_prices):
+    strategy.set_latest_buy_price(None)
     sell_dic = {}
     buy_dic  = {}
 
@@ -71,19 +85,26 @@ def simulate_trade(strategy, df_prices):
         latest_date  = df_prices.index[i]
         latest_price = df_prices[i]
 
-        if strategy.should_sell(i):
-            # execute_order(latest_price, "sell")
-            # print_order(latest_date, latest_price, "sell")
-
-            sell_dic[latest_date] = latest_price
-
         if strategy.should_buy(i):
             # execute_order(latest_price, "buy")
             # print_order(latest_date, latest_price, "buy")
+            strategy.set_latest_buy_price(latest_price)
 
             buy_dic[latest_date] = latest_price
+    
+        if strategy.should_sell(i):
+            # execute_order(latest_price, "sell")
+            # print_order(latest_date, latest_price, "sell")
+            strategy.set_latest_buy_price(None)
 
-    print_final_result(sell_dic, buy_dic)
+            sell_dic[latest_date] = latest_price
+
+
+    print(f'total_profit: {compute_total_profit(sell_dic, buy_dic):>6d}', end=" ")
+    print(f'sell_count  : {len(sell_dic):>3d}', end=" ")
+    print(f'buy_count   : {len(buy_dic) :>3d}', end="\n")
+
+    # print_final_result(sell_dic, buy_dic)
 
     return sell_dic, buy_dic
 

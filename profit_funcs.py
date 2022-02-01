@@ -7,4 +7,4 @@ def compute_total_profit(sell_dic, buy_dic):
 
     l = confirm_smaller_length(sell_dic, buy_dic)
 
-    return int(sum(sell_list[-l:]) - sum(buy_list[-l:]))
+    return int(sum(sell_list[:l]) - sum(buy_list[:l]))

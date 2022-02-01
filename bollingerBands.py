@@ -9,26 +9,27 @@ class BolligerBands:
         self.std  = df_close.rolling(term).std()
         self.df_close = df_close
 
+        self.set_latest_buy_price(None)
         self.set_upper(coef=3)
         self.set_lower(coef=3)
 
     def should_sell(self, i):
+        if self.latest_buy_price is None:
+            return False
+
         return (self.df_close[i] > self.upper[i])
 
     def should_buy(self, i):
+        if self.latest_buy_price:
+            return False
+
         return (self.df_close[i] < self.lower[i])
 
-    """
-    def sell(self, i):
-        print_df_date(self.close.index[i])
-        print("sell: ", end="")
-        print_prices([self.upper[i], self.lower[i], self.close[i]])
+    def set_latest_buy_price(self, buy_price):
+        self.latest_buy_price = buy_price
 
-    def buy(self, i):
-        print_df_date(self.close.index[i])
-        print("buy : ", end="")
-        print_prices([self.upper[i], self.lower[i], self.close[i]])
-    """
+    def get_latest_buy_price(self):
+        return self.latest_buy_price
 
     def set_upper(self, coef=3):
         self.upper = self.sma + coef * self.std
