@@ -1,4 +1,3 @@
-from finalizedprofit import FinalizedProfit
 from pandas_datareader import data
 import pandas
 import datetime
@@ -6,15 +5,19 @@ import datetime
 from util import *
 from print_funcs import *
 from indicator_funcs import *
-from plot_funcs import plot_df_sub
+from plot_funcs import  plot_df_sub
 from cross import Cross
 from bollingerBands import BolligerBands
+from finalizedprofit import FinalizedProfit
+from dmi import Dmi
+
 
 
 def main():
-    START = datetime.datetime(2001, 7, 28)
+    START = datetime.datetime(2022, 1, 1)
     END   = datetime.datetime.today()
-    SYMBOLS = ["^N225"]
+    # SYMBOLS = ["^N225"]
+    SYMBOLS = ["3666.T"]
     # SYMBOLS = ["4776.T", "4347.T", "8226.T"]
     # SYMBOLS = ["BTC-JPY"]
     SOURCE  = "yahoo"
@@ -33,6 +36,14 @@ def main():
         dfs[symbol] = data.DataReader(symbol, SOURCE, START, END)
         df = dfs[symbol]
 
+        dmi = Dmi(df["High"], df["Low"])
+        dmi.compute_tr()
+        dmi.compute_dms()
+        dmi.compute_dis(14)
+        print(dmi.get_tr())
+        print(dmi.get_dms())
+
+        """
         df["sma_short"] = generate_sma(df["Adj Close"], SHORT_TERM)
         df["sma_long"]  = generate_sma(df["Adj Close"], LONG_TERM)
 
@@ -69,12 +80,11 @@ def main():
         simulate_trade(simpler_b , df["Adj Close"])
 
 
-
         # plot_df_sub([df[["Adj Close", "upper", "lower"]]])
-        plot_df_sub([df["Adj Close"], df[["macd", "signal"]], df[["Adj Close", "upper", "lower"]]])
+        # plot_df_sub([df[["Adj Close", "upper", "lower"]]])
+        # plot_df_sub([df["Adj Close"], df[["macd", "signal"]], df[["Adj Close", "upper", "lower"]]])
         # plot_df_sub([df["Adj Close"], df[["Adj Close", "sma_short", "sma_long"]], df[["Adj Close", "ema_short", "ema_long"]], df[["macd", "signal"]], df[["Adj Close", "upper", "lower"]]])
-
-
+        """
 
 def simulate_trade(strategy, df_prices):
     strategy.set_latest_buy_price(None)
@@ -86,27 +96,23 @@ def simulate_trade(strategy, df_prices):
         latest_price = df_prices[i]
 
         if strategy.should_buy(i):
-            # execute_order(latest_price, "buy")
             # print_order(latest_date, latest_price, "buy")
             strategy.set_latest_buy_price(latest_price)
 
             buy_dic[latest_date] = latest_price
     
         if strategy.should_sell(i):
-            # execute_order(latest_price, "sell")
             # print_order(latest_date, latest_price, "sell")
             strategy.set_latest_buy_price(None)
 
             sell_dic[latest_date] = latest_price
 
-
-    print(f'total_profit: {compute_total_profit(sell_dic, buy_dic):>6d}', end=" ")
-    print(f'sell_count  : {len(sell_dic):>3d}', end=" ")
-    print(f'buy_count   : {len(buy_dic) :>3d}', end="\n")
-
+    print_summary_result(sell_dic, buy_dic)
     # print_final_result(sell_dic, buy_dic)
 
     return sell_dic, buy_dic
+
+
 
 
 def execute_order(order_price, side="sell"):
