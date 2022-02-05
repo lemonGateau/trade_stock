@@ -5,49 +5,53 @@ from print_funcs import *
 
 
 class RsiCutler(Strategy):
-    def __init__(self):
-        pass
+    def __init__(self, sell_ratio=0.7, buy_ratio=0.3):
+        self.set_sell_ratio(sell_ratio)
+        self.set_buy_ratio(buy_ratio)
+        self.set_latest_buy_price(None)
 
     def should_sell(self, i):
-        pass
+        if self.latest_buy_price is None:
+            return False
+
+        if self.rsi[i] > self.sell_ratio:
+            return True
+
+        return False
 
     def should_buy(self, i):
-        pass
+        if self.latest_buy_price:
+            return False
 
-    def compute_rs(self, df_close, term):
-        index = df_close.index
-        rs   = [0]*term
-        up   = [0]
-        down = [0]
+        if self.rsi[i] < self.buy_ratio:
+            return True
 
-        for i in range(term+1, len(df_close)+1):
-            for j in range(i-term, i):
-                diff = df_close[j] - df_close[j-1]
-                if diff > 0:
-                    up.append(diff)
-                    down.append(0)
-                else:
-                    up.append(0)
-                    down.append(diff)
+        return False
 
-            sum_up = sum(up[i-term:i])
-            sum_down = sum(down[i-term:i])
+    def compute_rsi(self, df_close, term):
+        df = pd.DataFrame()
+        df["close"] = df_close
+        df["diff"] = df["close"].diff()
 
-            rs.append(sum_up / (sum_up + abs(sum_down)) * 100)
+        df["up"] = df["diff"]
+        df["down"] = df["diff"]
 
-            #print_df_date(index[j])
-            #print_prices([df_close[j], df_close[j] - df_close[j-1], up[j], down[j], rs[j]])
+        df["up"].loc[df["up"] < 0]     = 0
+        df["down"].loc[df["down"] > 0] = 0
 
-        self.rs = pd.DataFrame(data=rs, index=index)
+        df["up_sum"]   = df["up"].rolling(term).sum()
+        df["down_sum"] = df["down"].rolling(term).sum().abs()
 
-        print("d\t\tclose\tdiff\tup\tdown\trs")
-        j = 0
-        print_df_date(index[j])
-        print_prices([df_close[j], 0, up[j], down[j], rs[j]])
-        
-        for j in range(1, len(df_close)):
-            print_df_date(index[j])
-            print_prices([df_close[j], df_close[j] - df_close[j-1], up[j], down[j], rs[j]])
+        df["rsi"] = df["up_sum"] / (df["up_sum"] + df["down_sum"])
+
+        # print(df)
+        self.rsi = df["rsi"]
 
     def get_rsi(self):
-        return self.rs
+        return self.rsi
+
+    def set_sell_ratio(self, sell_ratio):
+        self.sell_ratio = sell_ratio
+
+    def set_buy_ratio(self, buy_ratio):
+        self.buy_ratio = buy_ratio

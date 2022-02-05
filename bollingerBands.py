@@ -17,13 +17,13 @@ class BolligerBands(Strategy):
         if self.latest_buy_price is None:
             return False
 
-        return (self.df_close[i] > self.upper[i])
+        return self.df_close[i] > self.upper[i]
 
     def should_buy(self, i):
         if self.latest_buy_price:
             return False
 
-        return (self.df_close[i] < self.lower[i])
+        return self.df_close[i] < self.lower[i]
 
     def set_upper(self, coef=3):
         self.upper = self.sma + coef * self.std

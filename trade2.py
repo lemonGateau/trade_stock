@@ -16,12 +16,12 @@ from rsiCutler import RsiCutler
 
 
 def main():
-    START = datetime.datetime(2021, 12, 1)
+    START = datetime.datetime(2010, 1, 10)
     END   = datetime.datetime.today()
     # SYMBOLS = ["^N225"]
-    SYMBOLS = ["4347.T"]
+    # SYMBOLS = ["4347.T"]
     # SYMBOLS = ["3666.T"]
-    # SYMBOLS = ["4776.T", "4347.T", "8226.T"]
+    SYMBOLS = ["4776.T", "4347.T", "8226.T"]
     # SYMBOLS = ["BTC-JPY"]
     SOURCE  = "yahoo"
 
@@ -33,9 +33,12 @@ def main():
     ADXR_TERM          = 25
     MOMENTUM_TERM      = 26
     MOM_SIGNAL_TERM    = 10
+    RSI_CUTLER_TERM    = 14
 
-    PROFIT_RATIO = 0.2
-    LOSS_RATIO   = 0.05
+    PROFIT_RATIO   = 0.2
+    LOSS_RATIO     = 0.05
+    RSI_SELL_RATIO = 0.7
+    RSI_BUY_RATIO  = 0.3
 
     dfs = {}
 
@@ -43,12 +46,7 @@ def main():
         dfs[symbol] = data.DataReader(symbol, SOURCE, START, END)
         df = dfs[symbol]
 
-        rsi = RsiCutler()
-        rsi.compute_rs(df["Adj Close"], 14)
-        df["rsi_cutler"] = rsi.get_rsi()
-        print(df["rsi_cutler"])
-
-        """
+        #"""
         df["sma_short"]   = generate_sma(df["Adj Close"], SHORT_TERM)
         df["sma_long"]    = generate_sma(df["Adj Close"], LONG_TERM)
 
@@ -75,12 +73,17 @@ def main():
         df["momentum"]    = momentum.get_moment()
         df["mom_signal"]  = momentum.get_signal()
 
-        simpler_sma    = FinalizedProfit(PROFIT_RATIO, LOSS_RATIO, df["Adj Close"], add_strategy=sma_cross)
-        simpler_ema    = FinalizedProfit(PROFIT_RATIO, LOSS_RATIO, df["Adj Close"], add_strategy=ema_cross)
-        simpler_macd   = FinalizedProfit(PROFIT_RATIO, LOSS_RATIO, df["Adj Close"], add_strategy=macd_cross)
-        simpler_bb     = FinalizedProfit(PROFIT_RATIO, LOSS_RATIO, df["Adj Close"], add_strategy=b_bands)
-        simpler_dmi    = FinalizedProfit(PROFIT_RATIO, LOSS_RATIO, df["Adj Close"], add_strategy=dmi)
-        simpler_moment = FinalizedProfit(PROFIT_RATIO, LOSS_RATIO, df["Adj Close"], add_strategy=momentum)
+        rsi = RsiCutler(RSI_SELL_RATIO, RSI_BUY_RATIO)
+        rsi.compute_rsi(df["Adj Close"], RSI_CUTLER_TERM)
+        df["rsi_cutler"] = rsi.get_rsi()
+
+        simpler_sma    = FinalizedProfit(df["Adj Close"], sma_cross , PROFIT_RATIO, LOSS_RATIO)
+        simpler_ema    = FinalizedProfit(df["Adj Close"], ema_cross , PROFIT_RATIO, LOSS_RATIO)
+        simpler_macd   = FinalizedProfit(df["Adj Close"], macd_cross, PROFIT_RATIO, LOSS_RATIO)
+        simpler_bb     = FinalizedProfit(df["Adj Close"], b_bands   , PROFIT_RATIO, LOSS_RATIO)
+        simpler_dmi    = FinalizedProfit(df["Adj Close"], dmi       , PROFIT_RATIO, LOSS_RATIO)
+        simpler_moment = FinalizedProfit(df["Adj Close"], momentum  , PROFIT_RATIO, LOSS_RATIO)
+        simpler_rsi_c  = FinalizedProfit(df["Adj Close"], rsi       , PROFIT_RATIO, LOSS_RATIO)
 
 
         # 取引シミュレーション
@@ -91,6 +94,7 @@ def main():
         simulate_trade(b_bands       , df["Adj Close"])
         simulate_trade(dmi           , df["Adj Close"])
         simulate_trade(momentum      , df["Adj Close"])
+        simulate_trade(rsi           , df["Adj Close"])
 
         simulate_trade(simpler_sma   , df["Adj Close"])
         simulate_trade(simpler_ema   , df["Adj Close"])
@@ -98,13 +102,16 @@ def main():
         simulate_trade(simpler_bb    , df["Adj Close"])
         simulate_trade(simpler_dmi   , df["Adj Close"])
         simulate_trade(simpler_moment, df["Adj Close"])
+        simulate_trade(simpler_rsi_c , df["Adj Close"])
 
-        plot_df_sub([df["Adj Close"], df[["momentum", "mom_signal"]]])
+
+        plot_df_sub([df["Adj Close"], df["rsi_cutler"]])
+        # plot_df_sub([df["Adj Close"], df[["momentum", "mom_signal"]]])
         # plot_df_sub([df["Adj Close"], df[["plus_di", "minus_di", "adx"]]])
         # plot_df_sub([df[["Adj Close", "upper", "lower"]]])
         # plot_df_sub([df["Adj Close"], df[["macd", "macd_signal"]], df[["Adj Close", "upper", "lower"]]])
         # plot_df_sub([df["Adj Close"], df[["Adj Close", "sma_short", "sma_long"]], df[["Adj Close", "ema_short", "ema_long"]], df[["macd", "macd_signal"]], df[["Adj Close", "upper", "lower"]]])
-        """
+        #"""
 
 
 def simulate_trade(strategy, df_prices):
