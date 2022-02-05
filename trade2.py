@@ -12,7 +12,7 @@ from finalizedprofit import FinalizedProfit
 from dmi import Dmi
 from momentum import Momentum
 from rsiCutler import RsiCutler
-
+from combinationStrategy import CombinationStrtegy
 
 
 def main():
@@ -88,6 +88,9 @@ def main():
         simpler_moment = FinalizedProfit(close, momentum  , PROFIT_RATIO, LOSS_RATIO)
         simpler_rsi_c  = FinalizedProfit(close, rsi       , PROFIT_RATIO, LOSS_RATIO)
 
+        comb_strat1 = CombinationStrtegy([sma_cross, momentum])
+        comb_strat2 = CombinationStrtegy([macd_cross, simpler_bb])
+        comb_strat3 = CombinationStrtegy([sma_cross, ema_cross, macd_cross, b_bands, dmi, momentum, rsi])
 
         # 取引シミュレーション
         print(symbol)
@@ -98,7 +101,7 @@ def main():
         simulate_trade(dmi           , close)
         simulate_trade(momentum      , close)
         simulate_trade(rsi           , close)
-
+        """
         simulate_trade(simpler_sma   , close)
         simulate_trade(simpler_ema   , close)
         simulate_trade(simpler_macd  , close)
@@ -106,6 +109,11 @@ def main():
         simulate_trade(simpler_dmi   , close)
         simulate_trade(simpler_moment, close)
         simulate_trade(simpler_rsi_c , close)
+        """
+
+        simulate_trade(comb_strat1   , close)
+        simulate_trade(comb_strat2   , close)
+        simulate_trade(comb_strat3   , close)
 
 
         # plot_df_sub([close, df["rsi_cutler"]])
