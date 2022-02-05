@@ -7,9 +7,9 @@ class BolligerBands(Strategy):
     def __init__(self, df_close, term):
         self.df = pd.DataFrame()
 
-        self.df["sma"]   = generate_sma(df_close, term)
-        self.df["std"]   = df_close.rolling(term).std()
         self.df["close"] = df_close
+        self.df["std"]   = df_close.rolling(term).std()
+        self.df["sma"]   = generate_sma(df_close, term)
 
         self.set_latest_buy_price(None)
         self.set_upper(coef=3)
