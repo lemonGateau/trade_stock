@@ -16,7 +16,7 @@ from rsiCutler import RsiCutler
 
 
 def main():
-    START = datetime.datetime(2010, 1, 10)
+    START = datetime.datetime(2010, 1, 29)
     END   = datetime.datetime.today()
     # SYMBOLS = ["^N225"]
     # SYMBOLS = ["4347.T"]
@@ -45,13 +45,14 @@ def main():
     for symbol in SYMBOLS:
         dfs[symbol] = data.DataReader(symbol, SOURCE, START, END)
         df = dfs[symbol]
+        close = df["Adj Close"]
 
         #"""
-        df["sma_short"]   = generate_sma(df["Adj Close"], SHORT_TERM)
-        df["sma_long"]    = generate_sma(df["Adj Close"], LONG_TERM)
+        df["sma_short"]   = generate_sma(close, SHORT_TERM)
+        df["sma_long"]    = generate_sma(close, LONG_TERM)
 
-        df["ema_short"]   = generate_ema(df["Adj Close"], SHORT_TERM)
-        df["ema_long"]    = generate_ema(df["Adj Close"], LONG_TERM)
+        df["ema_short"]   = generate_ema(close, SHORT_TERM)
+        df["ema_long"]    = generate_ema(close, LONG_TERM)
         df["macd"]        = df["ema_short"] - df["ema_long"] 
         df["macd_signal"] = generate_sma(df["macd"], MACD_SIGNAL_TERM)
 
@@ -59,7 +60,7 @@ def main():
         ema_cross  = Cross(df["ema_short"], df["ema_long"])
         macd_cross = Cross(df["macd"]     , df["macd_signal"])
 
-        b_bands    = BolligerBands(df["Adj Close"], B_BANDS_TERM)
+        b_bands    = BolligerBands(close, B_BANDS_TERM)
         df["upper"] = b_bands.get_upper()
         df["lower"] = b_bands.get_lower()
 
@@ -68,49 +69,51 @@ def main():
         df["adx"]    , df["adxr"]     = dmi.get_adxs()
 
         momentum = Momentum()
-        momentum.compute_moment(df["Adj Close"], MOMENTUM_TERM)
+        momentum.compute_moment(close, MOMENTUM_TERM)
         momentum.generate_signal(MOM_SIGNAL_TERM)
-        df["momentum"]    = momentum.get_moment()
-        df["mom_signal"]  = momentum.get_signal()
+
+        df["momentum"]     = momentum.get_moment()
+        df["mom_signal"]   = momentum.get_signal()
+        df["mom_baseline"] = pd.DataFrame(data=[momentum.get_baseline_value()]*len(close), index=close.index)
 
         rsi = RsiCutler(RSI_SELL_RATIO, RSI_BUY_RATIO)
-        rsi.compute_rsi(df["Adj Close"], RSI_CUTLER_TERM)
+        rsi.compute_rsi(close, RSI_CUTLER_TERM)
         df["rsi_cutler"] = rsi.get_rsi()
 
-        simpler_sma    = FinalizedProfit(df["Adj Close"], sma_cross , PROFIT_RATIO, LOSS_RATIO)
-        simpler_ema    = FinalizedProfit(df["Adj Close"], ema_cross , PROFIT_RATIO, LOSS_RATIO)
-        simpler_macd   = FinalizedProfit(df["Adj Close"], macd_cross, PROFIT_RATIO, LOSS_RATIO)
-        simpler_bb     = FinalizedProfit(df["Adj Close"], b_bands   , PROFIT_RATIO, LOSS_RATIO)
-        simpler_dmi    = FinalizedProfit(df["Adj Close"], dmi       , PROFIT_RATIO, LOSS_RATIO)
-        simpler_moment = FinalizedProfit(df["Adj Close"], momentum  , PROFIT_RATIO, LOSS_RATIO)
-        simpler_rsi_c  = FinalizedProfit(df["Adj Close"], rsi       , PROFIT_RATIO, LOSS_RATIO)
+        simpler_sma    = FinalizedProfit(close, sma_cross , PROFIT_RATIO, LOSS_RATIO)
+        simpler_ema    = FinalizedProfit(close, ema_cross , PROFIT_RATIO, LOSS_RATIO)
+        simpler_macd   = FinalizedProfit(close, macd_cross, PROFIT_RATIO, LOSS_RATIO)
+        simpler_bb     = FinalizedProfit(close, b_bands   , PROFIT_RATIO, LOSS_RATIO)
+        simpler_dmi    = FinalizedProfit(close, dmi       , PROFIT_RATIO, LOSS_RATIO)
+        simpler_moment = FinalizedProfit(close, momentum  , PROFIT_RATIO, LOSS_RATIO)
+        simpler_rsi_c  = FinalizedProfit(close, rsi       , PROFIT_RATIO, LOSS_RATIO)
 
 
         # 取引シミュレーション
         print(symbol)
-        simulate_trade(sma_cross     , df["Adj Close"])
-        simulate_trade(ema_cross     , df["Adj Close"])
-        simulate_trade(macd_cross    , df["Adj Close"])
-        simulate_trade(b_bands       , df["Adj Close"])
-        simulate_trade(dmi           , df["Adj Close"])
-        simulate_trade(momentum      , df["Adj Close"])
-        simulate_trade(rsi           , df["Adj Close"])
+        simulate_trade(sma_cross     , close)
+        simulate_trade(ema_cross     , close)
+        simulate_trade(macd_cross    , close)
+        simulate_trade(b_bands       , close)
+        simulate_trade(dmi           , close)
+        simulate_trade(momentum      , close)
+        simulate_trade(rsi           , close)
 
-        simulate_trade(simpler_sma   , df["Adj Close"])
-        simulate_trade(simpler_ema   , df["Adj Close"])
-        simulate_trade(simpler_macd  , df["Adj Close"])
-        simulate_trade(simpler_bb    , df["Adj Close"])
-        simulate_trade(simpler_dmi   , df["Adj Close"])
-        simulate_trade(simpler_moment, df["Adj Close"])
-        simulate_trade(simpler_rsi_c , df["Adj Close"])
+        simulate_trade(simpler_sma   , close)
+        simulate_trade(simpler_ema   , close)
+        simulate_trade(simpler_macd  , close)
+        simulate_trade(simpler_bb    , close)
+        simulate_trade(simpler_dmi   , close)
+        simulate_trade(simpler_moment, close)
+        simulate_trade(simpler_rsi_c , close)
 
 
-        plot_df_sub([df["Adj Close"], df["rsi_cutler"]])
-        # plot_df_sub([df["Adj Close"], df[["momentum", "mom_signal"]]])
-        # plot_df_sub([df["Adj Close"], df[["plus_di", "minus_di", "adx"]]])
+        # plot_df_sub([close, df["rsi_cutler"]])
+        # plot_df_sub([close, df[["momentum", "mom_signal", "mom_baseline"]]])
+        # plot_df_sub([close, df[["plus_di", "minus_di", "adx"]]])
         # plot_df_sub([df[["Adj Close", "upper", "lower"]]])
-        # plot_df_sub([df["Adj Close"], df[["macd", "macd_signal"]], df[["Adj Close", "upper", "lower"]]])
-        # plot_df_sub([df["Adj Close"], df[["Adj Close", "sma_short", "sma_long"]], df[["Adj Close", "ema_short", "ema_long"]], df[["macd", "macd_signal"]], df[["Adj Close", "upper", "lower"]]])
+        plot_df_sub([close, df[["macd", "macd_signal"]], df[["Adj Close", "upper", "lower"]]])
+        # plot_df_sub([close, df[["Adj Close", "sma_short", "sma_long"]], df[["Adj Close", "ema_short", "ema_long"]], df[["macd", "macd_signal"]], df[["Adj Close", "upper", "lower"]]])
         #"""
 
 

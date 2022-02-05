@@ -5,6 +5,7 @@ class FinalizedProfit(Strategy):
     def __init__(self, df_close, add_strategy, profit_ratio=0.2, loss_ratio=0.05):
         self.df_close = df_close
         self.add_strategy = add_strategy
+
         self.set_profit_ratio(profit_ratio)
         self.set_loss_ratio(loss_ratio)
         self.set_latest_buy_price(None)
@@ -13,9 +14,11 @@ class FinalizedProfit(Strategy):
         if self.latest_buy_price is None:
             return False
 
+        # 利確
         if should_realize_profit(self.df_close[i], self.latest_buy_price, self.profit_ratio):
             return True
 
+        # 損切り
         if should_stop_loss(self.df_close[i], self.latest_buy_price, self.loss_ratio):
             return True
 

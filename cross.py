@@ -1,4 +1,4 @@
-import pandas
+import pandas as pd
 from indicator_funcs import *
 from print_funcs import *
 from strategy import Strategy

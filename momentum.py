@@ -1,4 +1,4 @@
-from operator import is_
+import pandas as pd
 from indicator_funcs import is_crossover
 from indicator_funcs import generate_sma
 from strategy import Strategy
@@ -15,7 +15,7 @@ class Momentum(Strategy):
         if is_crossover([self.base]*2, self.moment[i-1:i+1]):
             return True
 
-        if self.moment[i] >= 0 and is_crossover(self.signal[i-1:i+1], self.moment[i-1:i+1]):
+        if self.moment[i] >= self.base and is_crossover(self.signal[i-1:i+1], self.moment[i-1:i+1]):
             return True
 
         return False
@@ -28,7 +28,7 @@ class Momentum(Strategy):
         if is_crossover(self.moment[i-1:i+1], [self.base]*2):
             return True
 
-        if self.moment[i] <= 0 and is_crossover(self.moment[i-1:i+1], self.signal[i-1:i+1]):
+        if self.moment[i] <= self.base and is_crossover(self.moment[i-1:i+1], self.signal[i-1:i+1]):
             return True
 
         return False
@@ -39,11 +39,14 @@ class Momentum(Strategy):
     def get_moment(self):
         return self.moment
 
-    def set_baseline_value(self, baseline_value):
-        self.base = baseline_value
-
     def generate_signal(self, term):
         self.signal = generate_sma(self.moment, term)
 
     def get_signal(self):
         return self.signal
+
+    def set_baseline_value(self, baseline_value):
+        self.base = baseline_value
+
+    def get_baseline_value(self):
+        return self.base
