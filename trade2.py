@@ -45,6 +45,8 @@ def main():
 
         rsi = RsiCutler()
         rsi.compute_rs(df["Adj Close"], 14)
+        df["rsi_cutler"] = rsi.get_rsi()
+        print(df["rsi_cutler"])
 
         """
         df["sma_short"]   = generate_sma(df["Adj Close"], SHORT_TERM)

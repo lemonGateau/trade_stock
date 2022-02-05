@@ -15,36 +15,39 @@ class RsiCutler(Strategy):
         pass
 
     def compute_rs(self, df_close, term):
-        rs = {}
-        up = {}
-        down = {}
         index = df_close.index
+        rs   = [0]*term
+        up   = [0]
+        down = [0]
 
-        for j in range(term):
-            rs[index[j]] = 0
-            up[index[j]] = 0
-            down[index[j]] = 0
-
-        for i in range(term+1, len(df_close)):
-            sum_up   = 0
-            sum_down = 0
+        for i in range(term+1, len(df_close)+1):
             for j in range(i-term, i):
                 diff = df_close[j] - df_close[j-1]
                 if diff > 0:
-                    sum_up += diff
-                    up[index[j]] = diff
-                    down[index[j]] = 0
+                    up.append(diff)
+                    down.append(0)
                 else:
-                    sum_down += diff
-                    up[index[j]] = 0
-                    down[index[j]] = diff
+                    up.append(0)
+                    down.append(diff)
 
-            rs[index[j]] = sum_up / (sum_up + abs(sum_down)) * 100
+            sum_up = sum(up[i-term:i])
+            sum_down = sum(down[i-term:i])
 
+            rs.append(sum_up / (sum_up + abs(sum_down)) * 100)
+
+            #print_df_date(index[j])
+            #print_prices([df_close[j], df_close[j] - df_close[j-1], up[j], down[j], rs[j]])
+
+        self.rs = pd.DataFrame(data=rs, index=index)
+
+        print("d\t\tclose\tdiff\tup\tdown\trs")
+        j = 0
+        print_df_date(index[j])
+        print_prices([df_close[j], 0, up[j], down[j], rs[j]])
+        
+        for j in range(1, len(df_close)):
             print_df_date(index[j])
-            print_prices([df_close[j], df_close[j] - df_close[j-1], up[index[j]], down[index[j]], rs[index[j]]])
-
-        self.rs = pd.DataFrame(data=rs.values(), index=rs.keys())
+            print_prices([df_close[j], df_close[j] - df_close[j-1], up[j], down[j], rs[j]])
 
     def get_rsi(self):
         return self.rs
