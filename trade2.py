@@ -101,7 +101,7 @@ def main():
         simulate_trade(dmi           , close)
         simulate_trade(momentum      , close)
         simulate_trade(rsi           , close)
-        """
+        #"""
         simulate_trade(simpler_sma   , close)
         simulate_trade(simpler_ema   , close)
         simulate_trade(simpler_macd  , close)
@@ -109,8 +109,7 @@ def main():
         simulate_trade(simpler_dmi   , close)
         simulate_trade(simpler_moment, close)
         simulate_trade(simpler_rsi_c , close)
-        """
-
+        #"""
         simulate_trade(comb_strat1   , close)
         simulate_trade(comb_strat2   , close)
         simulate_trade(comb_strat3   , close)
@@ -119,8 +118,8 @@ def main():
         # plot_df_sub([close, df["rsi_cutler"]])
         # plot_df_sub([close, df[["momentum", "mom_signal", "mom_baseline"]]])
         # plot_df_sub([close, df[["plus_di", "minus_di", "adx"]]])
-        # plot_df_sub([df[["Adj Close", "upper", "lower"]]])
-        plot_df_sub([close, df[["macd", "macd_signal"]], df[["Adj Close", "upper", "lower"]]])
+        plot_df_sub([df[["Adj Close", "upper", "lower"]]])
+        # plot_df_sub([close, df[["macd", "macd_signal"]], df[["Adj Close", "upper", "lower"]]])
         # plot_df_sub([close, df[["Adj Close", "sma_short", "sma_long"]], df[["Adj Close", "ema_short", "ema_long"]], df[["macd", "macd_signal"]], df[["Adj Close", "upper", "lower"]]])
         #"""
 
