@@ -1,9 +1,9 @@
 import pandas
 from indicator_funcs import *
 from print_funcs import *
+from strategy import Strategy
 
-
-class BolligerBands:
+class BolligerBands(Strategy):
     def __init__(self, df_close, term):
         self.sma = generate_sma(df_close, term)
         self.std  = df_close.rolling(term).std()
@@ -24,12 +24,6 @@ class BolligerBands:
             return False
 
         return (self.df_close[i] < self.lower[i])
-
-    def set_latest_buy_price(self, buy_price):
-        self.latest_buy_price = buy_price
-
-    def get_latest_buy_price(self):
-        return self.latest_buy_price
 
     def set_upper(self, coef=3):
         self.upper = self.sma + coef * self.std

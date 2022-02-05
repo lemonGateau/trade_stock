@@ -1,7 +1,7 @@
 from indicator_funcs import should_realize_profit, should_stop_loss
+from strategy import Strategy
 
-
-class FinalizedProfit():
+class FinalizedProfit(Strategy):
     def __init__(self, profit_ratio, loss_ratio, df_close, add_strategy):
         self.profit_ratio = profit_ratio
         self.loss_ratio   = loss_ratio
@@ -31,6 +31,3 @@ class FinalizedProfit():
     def set_latest_buy_price(self, buy_price):
         self.latest_buy_price = buy_price
         self.add_strategy.set_latest_buy_price(buy_price)
-
-    def get_latest_buy_price(self):
-        return self.latest_buy_price

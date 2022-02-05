@@ -1,6 +1,3 @@
-from this import d
-
-
 class Strategy:
     def __init__(self):
         pass
@@ -16,4 +13,3 @@ class Strategy:
 
     def get_latest_buy_price(self):
         return self.latest_buy_price
-
