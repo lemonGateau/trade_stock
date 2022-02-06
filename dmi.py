@@ -10,14 +10,15 @@ class Dmi(Strategy):
         self.df["High"] = df_high
         self.df["Low"]  = df_low
 
-        self.set_latest_buy_price(None)
-
         self.compute_tr()
         self.compute_dms()
         self.compute_dis(adx_term)
         self.compute_dx()
         self.compute_adx(adx_term)
         self.compute_adxr(adxr_term)
+
+        self.set_latest_buy_price(None)
+        self.set_strategy_name("dmi")
 
         # print(self.df)
 

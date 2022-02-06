@@ -24,9 +24,9 @@ def print_all_trade_hist(trade_dic):
 
 
 def print_summary_result(sell_dic, buy_dic):
-    print(f'total_profit: {compute_total_profit(sell_dic, buy_dic):>6d}', end=" ")
+    print(f'profit: {compute_total_profit(sell_dic, buy_dic):>6d}', end=" ")
     print(f'sell_count: {len(sell_dic):>3d}', end=" ")
-    print(f'buy_count: {len(buy_dic) :>3d}', end="\n")
+    print(f'buy_count : {len(buy_dic) :>3d}', end="\n")
 
 
 def print_final_result(sell_dic, buy_dic):
@@ -38,9 +38,7 @@ def print_final_result(sell_dic, buy_dic):
     print("buy_history:")
     print_all_trade_hist(buy_dic)
 
-    print(f'sell_count: {len(sell_dic)}')
-    print(f'buy_count: {len(buy_dic)}')
-    print(f'total_profit: {compute_total_profit(sell_dic, buy_dic)}')
+    print_summary_result(sell_dic, buy_dic)
 
     print("="*30)
     print("\n")

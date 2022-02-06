@@ -16,13 +16,13 @@ from combinationStrategy import CombinationStrtegy
 
 
 def main():
-    START = datetime.datetime(2010, 1, 29)
+    START = datetime.datetime(2021, 1, 29)
     END   = datetime.datetime.today()
     # SYMBOLS = ["^N225"]
-    # SYMBOLS = ["4347.T"]
+    SYMBOLS = ["4347.T"]
     # SYMBOLS = ["3666.T"]
-    SYMBOLS = ["4776.T", "4347.T", "8226.T"]
-    # SYMBOLS = ["BTC-JPY"]
+    # SYMBOLS = ["4776.T", "4347.T", "8226.T"]
+    # SYMBOLS = ["BTC-JPY", "ETH-JPY", "XEM-JPY"]
     SOURCE  = "yahoo"
 
     SHORT_TERM         = 5
@@ -60,9 +60,13 @@ def main():
         ema_cross  = Cross(df["ema_short"], df["ema_long"])
         macd_cross = Cross(df["macd"]     , df["macd_signal"])
 
-        b_bands    = BolligerBands(close, B_BANDS_TERM)
-        df["upper"] = b_bands.get_upper()
-        df["lower"] = b_bands.get_lower()
+        sma_cross.set_strategy_name("sma")
+        ema_cross.set_strategy_name("ema")
+        macd_cross.set_strategy_name("macd")
+
+        bbands    = BolligerBands(close, B_BANDS_TERM)
+        df["upper"] = bbands.get_upper()
+        df["lower"] = bbands.get_lower()
 
         dmi = Dmi(df["High"], df["Low"], ADX_TERM, ADXR_TERM)
         df["plus_di"], df["minus_di"] = dmi.get_dis()
@@ -78,54 +82,60 @@ def main():
 
         rsi = RsiCutler(RSI_SELL_RATIO, RSI_BUY_RATIO)
         rsi.compute_rsi(close, RSI_CUTLER_TERM)
-        df["rsi_cutler"] = rsi.get_rsi()
+        df["rsi"] = rsi.get_rsi()
 
-        simpler_sma    = FinalizedProfit(close, sma_cross , PROFIT_RATIO, LOSS_RATIO)
-        simpler_ema    = FinalizedProfit(close, ema_cross , PROFIT_RATIO, LOSS_RATIO)
-        simpler_macd   = FinalizedProfit(close, macd_cross, PROFIT_RATIO, LOSS_RATIO)
-        simpler_bb     = FinalizedProfit(close, b_bands   , PROFIT_RATIO, LOSS_RATIO)
-        simpler_dmi    = FinalizedProfit(close, dmi       , PROFIT_RATIO, LOSS_RATIO)
-        simpler_moment = FinalizedProfit(close, momentum  , PROFIT_RATIO, LOSS_RATIO)
-        simpler_rsi_c  = FinalizedProfit(close, rsi       , PROFIT_RATIO, LOSS_RATIO)
+        simpler = FinalizedProfit(close, PROFIT_RATIO, LOSS_RATIO)
 
-        comb_strat1 = CombinationStrtegy([sma_cross, momentum])
-        comb_strat2 = CombinationStrtegy([macd_cross, simpler_bb])
-        comb_strat3 = CombinationStrtegy([sma_cross, ema_cross, macd_cross, b_bands, dmi, momentum, rsi])
+        comb_strat1 = CombinationStrtegy([sma_cross , simpler])
+        comb_strat2 = CombinationStrtegy([ema_cross , simpler])
+        comb_strat3 = CombinationStrtegy([macd_cross, simpler])
+        comb_strat4 = CombinationStrtegy([bbands    , simpler])
+        comb_strat5 = CombinationStrtegy([dmi       , simpler])
+        comb_strat6 = CombinationStrtegy([momentum  , simpler])
+        comb_strat7 = CombinationStrtegy([rsi       , simpler])
+        comb_strat8 = CombinationStrtegy([macd_cross, bbands, dmi])
+        comb_strat9 = CombinationStrtegy([rsi       , bbands, dmi])
+
+        comb_strat_all = CombinationStrtegy([sma_cross, ema_cross, macd_cross, bbands, dmi, momentum, rsi, simpler])
+        comb_strat_all.set_strategy_name(["all"])
 
         # 取引シミュレーション
-        print(symbol)
-        simulate_trade(sma_cross     , close)
-        simulate_trade(ema_cross     , close)
-        simulate_trade(macd_cross    , close)
-        simulate_trade(b_bands       , close)
-        simulate_trade(dmi           , close)
-        simulate_trade(momentum      , close)
-        simulate_trade(rsi           , close)
-        #"""
-        simulate_trade(simpler_sma   , close)
-        simulate_trade(simpler_ema   , close)
-        simulate_trade(simpler_macd  , close)
-        simulate_trade(simpler_bb    , close)
-        simulate_trade(simpler_dmi   , close)
-        simulate_trade(simpler_moment, close)
-        simulate_trade(simpler_rsi_c , close)
-        #"""
-        simulate_trade(comb_strat1   , close)
-        simulate_trade(comb_strat2   , close)
-        simulate_trade(comb_strat3   , close)
+        print(symbol, end=" ")
+        print_df_date(START)
+        print_df_date(END)
+        print("\n")
 
+        simulate_trade(sma_cross  , close)
+        simulate_trade(ema_cross  , close)
+        simulate_trade(macd_cross , close)
+        simulate_trade(bbands    , close)
+        simulate_trade(dmi        , close)
+        simulate_trade(momentum   , close)
+        simulate_trade(rsi        , close)
 
-        # plot_df_sub([close, df["rsi_cutler"]])
+        simulate_trade(comb_strat1, close)
+        simulate_trade(comb_strat2, close)
+        simulate_trade(comb_strat3, close)
+        simulate_trade(comb_strat4, close)
+        simulate_trade(comb_strat5, close)
+        simulate_trade(comb_strat6, close)
+        simulate_trade(comb_strat7, close)
+        simulate_trade(comb_strat8, close)
+        simulate_trade(comb_strat9, close)
+        simulate_trade(comb_strat_all, close)
+
+        # plot_df_sub([close, df["rsi"]])
         # plot_df_sub([close, df[["momentum", "mom_signal", "mom_baseline"]]])
         # plot_df_sub([close, df[["plus_di", "minus_di", "adx"]]])
-        plot_df_sub([df[["Adj Close", "upper", "lower"]]])
-        # plot_df_sub([close, df[["macd", "macd_signal"]], df[["Adj Close", "upper", "lower"]]])
+        # plot_df_sub([df[["Adj Close", "upper", "lower"]]])
+        plot_df_sub([close, df[["macd", "macd_signal"]], df[["Adj Close", "upper", "lower"]]])
         # plot_df_sub([close, df[["Adj Close", "sma_short", "sma_long"]], df[["Adj Close", "ema_short", "ema_long"]], df[["macd", "macd_signal"]], df[["Adj Close", "upper", "lower"]]])
         #"""
 
 
 def simulate_trade(strategy, df_prices):
-    strategy.set_latest_buy_price(None)
+    # strategy.set_latest_buy_price(None)
+
     sell_dic = {}
     buy_dic  = {}
 
@@ -145,7 +155,7 @@ def simulate_trade(strategy, df_prices):
 
             sell_dic[latest_date] = latest_price
 
-    print(str(strategy)[:15], end="\t")
+    print("{:20}".format(strategy.get_strategy_name()), end=" ")
     print_summary_result(sell_dic, buy_dic)
     # print_final_result(sell_dic, buy_dic)
 

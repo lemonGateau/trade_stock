@@ -6,7 +6,9 @@ from strategy import Strategy
 class Momentum(Strategy):
     def __init__(self):
         self.set_baseline_value(0)
+
         self.set_latest_buy_price(None)
+        self.set_strategy_name("mom")
 
     def should_sell(self, i):
         if self.latest_buy_price is None:

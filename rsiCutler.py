@@ -8,7 +8,9 @@ class RsiCutler(Strategy):
     def __init__(self, sell_ratio=0.7, buy_ratio=0.3):
         self.set_sell_ratio(sell_ratio)
         self.set_buy_ratio(buy_ratio)
+
         self.set_latest_buy_price(None)
+        self.set_strategy_name("rsi")
 
     def should_sell(self, i):
         if self.latest_buy_price is None:

@@ -7,7 +7,9 @@ class Cross(Strategy):
     def __init__(self, ma1, ma2):
         self.ma1 = ma1
         self.ma2 = ma2
+
         self.set_latest_buy_price(None)
+        self.set_strategy_name("cross")
 
     def should_sell(self, i):
         if self.latest_buy_price is None:

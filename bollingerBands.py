@@ -11,9 +11,11 @@ class BolligerBands(Strategy):
         self.df["std"]   = df_close.rolling(term).std()
         self.df["sma"]   = generate_sma(df_close, term)
 
-        self.set_latest_buy_price(None)
         self.set_upper(coef=3)
         self.set_lower(coef=3)
+
+        self.set_latest_buy_price(None)
+        self.set_strategy_name("bbands")
 
         # print(self.df)
 
