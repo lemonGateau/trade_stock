@@ -108,7 +108,7 @@ def main():
         simulate_trade(sma_cross  , close)
         simulate_trade(ema_cross  , close)
         simulate_trade(macd_cross , close)
-        simulate_trade(bbands    , close)
+        simulate_trade(bbands     , close)
         simulate_trade(dmi        , close)
         simulate_trade(momentum   , close)
         simulate_trade(rsi        , close)
