@@ -1,5 +1,7 @@
 import pandas as pd
+
 from indicator_funcs import *
+from plot_funcs import plot_df
 from print_funcs import *
 from strategy import Strategy
 
@@ -22,3 +24,14 @@ class Cross(Strategy):
             return False
 
         return is_crossover(self.ma2[i-1:i+1], self.ma1[i-1:i+1])
+
+    def build_df_indicator(self):
+        indicator = pd.DataFrame()
+
+        indicator["ma1"]     = self.ma1
+        indicator["ma2"]     = self.ma2
+
+        return indicator
+
+    def plot_df_indicator(self):
+        plot_df([self.build_df_indicator()])

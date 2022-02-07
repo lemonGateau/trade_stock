@@ -1,4 +1,6 @@
+import pandas as pd
 from indicator_funcs import should_realize_profit, should_stop_loss
+from plot_funcs import plot_df
 from strategy import Strategy
 
 class FinalizedProfit(Strategy):
@@ -37,3 +39,11 @@ class FinalizedProfit(Strategy):
     def set_loss_ratio(self, loss_ratio):
         self.loss_ratio = loss_ratio
 
+    def plot_df_indicator(self):
+        plot_df([self.build_df_indicator()])
+
+    def build_df_indicator(self):
+        indicator = pd.DataFrame()
+        indicator["Close"] = self.df_close
+
+        return indicator

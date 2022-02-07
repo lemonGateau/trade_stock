@@ -1,4 +1,4 @@
-
+import numpy as np
 
 def generate_sma(df_prices=[], window=5):
     return df_prices.rolling(window).mean()
@@ -12,7 +12,9 @@ def is_crossover(ma1_list, ma2_list):
     if (len(ma1_list) < 2) or (len(ma1_list) < 2):
         return False
 
-    return (ma1_list[-2] < ma2_list[-2]) and (ma1_list[-1] >= ma2_list[-1])
+
+    with np.errstate(invalid='ignore'): # nanの比較によるエラーを防ぐ
+        return (ma1_list[-2] < ma2_list[-2]) and (ma1_list[-1] >= ma2_list[-1])
 
 
 def should_realize_profit(latest_price, buy_price, profit_ratio=0.1):

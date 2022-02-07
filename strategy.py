@@ -1,3 +1,7 @@
+import pandas as pd
+from plot_funcs import plot_df
+
+
 class Strategy:
     def __init__(self):
         # self.set_latest_buy_price(None)
@@ -21,3 +25,9 @@ class Strategy:
 
     def get_strategy_name(self):
         return self.strat_name
+
+    def build_df_indicator(self):
+        indicator = pd.DataFrame()
+
+    def plot_df_indicator(self):
+        plot_df([self.build_df_indicator()])

@@ -1,5 +1,6 @@
 import pandas as pd
 from indicator_funcs import *
+from plot_funcs import plot_df
 from print_funcs import *
 from strategy import Strategy
 
@@ -7,9 +8,9 @@ class BolligerBands(Strategy):
     def __init__(self, df_close, term):
         self.df = pd.DataFrame()
 
-        self.df["close"] = df_close
-        self.df["std"]   = df_close.rolling(term).std()
-        self.df["sma"]   = generate_sma(df_close, term)
+        self.close = df_close
+        self.std   = df_close.rolling(term).std()
+        self.sma   = generate_sma(df_close, term)
 
         self.set_upper(coef=3)
         self.set_lower(coef=3)
@@ -23,22 +24,35 @@ class BolligerBands(Strategy):
         if self.latest_buy_price is None:
             return False
 
-        return self.df["close"][i] > self.df["upper"][i]
+        return self.close[i] > self.upper[i]
 
     def should_buy(self, i):
         if self.latest_buy_price:
             return False
 
-        return self.df["close"][i] < self.df["lower"][i]
+        return self.close[i] < self.lower[i]
 
     def set_upper(self, coef=3):
-        self.df["upper"] = self.df["sma"] + coef * self.df["std"]
+        self.upper = self.sma + coef * self.std
 
     def set_lower(self, coef=3):
-        self.df["lower"] = self.df["sma"] - coef * self.df["std"]
+        self.lower = self.sma - coef * self.std
 
     def get_upper(self):
-        return self.df["upper"]
+        return self.upper
 
     def get_lower(self):
-        return self.df["lower"]
+        return self.lower
+
+    def build_df_indicator(self):
+        indicator = pd.DataFrame()
+
+        indicator["Close"] = self.close
+        indicator["middle"] = self.sma
+        indicator["upper"] = self.upper
+        indicator["lower"] = self.lower
+
+        return indicator
+
+    def plot_df_indicator(self):
+        plot_df([self.build_df_indicator()])

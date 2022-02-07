@@ -1,7 +1,8 @@
 import pandas as pd
 from indicator_funcs import generate_ema
-from strategy import Strategy
+from plot_funcs import plot_df
 from print_funcs import *
+from strategy import Strategy
 
 
 class RsiCutler(Strategy):
@@ -32,12 +33,12 @@ class RsiCutler(Strategy):
 
     def compute_rsi(self, df_close, term):
         df = pd.DataFrame()
-        df["close"] = df_close
-        df["diff"] = df["close"].diff()
 
-        df["up"] = df["diff"]
+        df["diff"] = df_close.diff()
+        df["up"]   = df["diff"]
         df["down"] = df["diff"]
 
+        # upの0未満とdownの0より大を0に 
         df["up"].loc[df["up"] < 0]     = 0
         df["down"].loc[df["down"] > 0] = 0
 
@@ -57,3 +58,13 @@ class RsiCutler(Strategy):
 
     def set_buy_ratio(self, buy_ratio):
         self.buy_ratio = buy_ratio
+
+    def build_df_indicator(self):
+        indicator = pd.DataFrame()
+        indicator["rsi"] = self.rsi
+
+        return indicator
+
+    def plot_df_indicator(self):
+        plot_df([self.build_df_indicator()])
+

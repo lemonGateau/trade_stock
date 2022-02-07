@@ -1,12 +1,12 @@
+from asyncio import base_events
+from email.mime import base
 import pandas as pd
-from indicator_funcs import is_crossover
-from indicator_funcs import generate_sma
+from indicator_funcs import is_crossover, generate_sma
+from plot_funcs import plot_df
 from strategy import Strategy
 
 class Momentum(Strategy):
     def __init__(self):
-        self.set_baseline_value(0)
-
         self.set_latest_buy_price(None)
         self.set_strategy_name("mom")
 
@@ -14,10 +14,10 @@ class Momentum(Strategy):
         if self.latest_buy_price is None:
             return False
 
-        if is_crossover([self.base]*2, self.moment[i-1:i+1]):
+        if is_crossover(self.baseline[i-1:i+1], self.moment[i-1:i+1]):
             return True
 
-        if self.moment[i] >= self.base and is_crossover(self.signal[i-1:i+1], self.moment[i-1:i+1]):
+        if self.moment[i] >= self.baseline[i] and is_crossover(self.signal[i-1:i+1], self.moment[i-1:i+1]):
             return True
 
         return False
@@ -27,10 +27,10 @@ class Momentum(Strategy):
             return False
 
         # ゼロラインを超えた時
-        if is_crossover(self.moment[i-1:i+1], [self.base]*2):
+        if is_crossover(self.moment[i-1:i+1], self.baseline[i-1:i+1]):
             return True
 
-        if self.moment[i] <= self.base and is_crossover(self.moment[i-1:i+1], self.signal[i-1:i+1]):
+        if self.moment[i] <= self.baseline[i] and is_crossover(self.moment[i-1:i+1], self.signal[i-1:i+1]):
             return True
 
         return False
@@ -38,17 +38,20 @@ class Momentum(Strategy):
     def compute_moment(self, df_close, term):
         self.moment = df_close - df_close.shift(term)
 
-    def get_moment(self):
-        return self.moment
-
     def generate_signal(self, term):
         self.signal = generate_sma(self.moment, term)
 
-    def get_signal(self):
-        return self.signal
+    def generate_baseline(self, base_value):
+        self.baseline =  pd.DataFrame(data=[base_value]*len(self.moment), index=self.moment.index, columns=["base"])["base"]
 
-    def set_baseline_value(self, baseline_value):
-        self.base = baseline_value
+    def build_df_indicator(self):
+        indicator = pd.DataFrame()
 
-    def get_baseline_value(self):
-        return self.base
+        indicator["moment"]     = self.moment
+        indicator["mom_signal"] = self.signal
+        indicator["mom_base"]   = self.baseline
+
+        return indicator
+
+    def plot_df_indicator(self):
+        plot_df([self.build_df_indicator()])
