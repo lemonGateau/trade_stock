@@ -1,11 +1,15 @@
+from optparse import Values
+from xmlrpc.client import FastParser
 from pandas_datareader import data
 import pandas as pd
 import datetime
 
-from util import *
 from print_funcs import *
-from indicator_funcs import *
+from profit_funcs import *
 from plot_funcs import  plot_df
+from indicator_funcs import *
+from util import *
+
 from cross import Cross
 from bollingerBands import BolligerBands
 from finalizedprofit import FinalizedProfit
@@ -17,8 +21,9 @@ from uniqueStrategy1 import UniqueStrategy1
 
 
 def main():
-    START = datetime.datetime(2013, 1, 1)
-    END   = datetime.datetime.today()
+    START = datetime.datetime(2017, 1, 1)
+    END   = datetime.datetime.today().date()
+
     # SYMBOLS = ["^N225"]
     SYMBOLS = ["4347.T"]
     # SYMBOLS = ["3666.T"]
@@ -91,63 +96,75 @@ def main():
         df = pd.concat([df, df_dmi, df_bb, df_mom, df_rsi], axis=1)
         df = df.loc[:, ~df.columns.duplicated()]    # 重複列を削除
 
-        macd_bb2 = CombinationStrategy([macd_cross, bbands2])
-        macd_bb3 = CombinationStrategy([macd_cross, bbands3])
 
-        u1 = UniqueStrategy1([macd_cross], [bbands2, simpler])
+        umacd_bb2_fp = UniqueStrategy1([macd_cross]         , [bbands2, simpler])
+        macd_fp      = UniqueStrategy1([macd_cross, simpler], [macd_cross, simpler])
+        umacd_rsi    = UniqueStrategy1([macd_cross]         , [rsi])
 
-        """
-        comb_strat1 = CombinationStrategy([sma_cross , simpler])
-        comb_strat2 = CombinationStrategy([ema_cross , simpler])
-        comb_strat3 = CombinationStrategy([macd_cross, simpler])
-        comb_strat4 = CombinationStrategy([bbands    , simpler])
-        comb_strat5 = CombinationStrategy([dmi       , simpler])
-        comb_strat6 = CombinationStrategy([momentum  , simpler])
-        comb_strat7 = CombinationStrategy([rsi       , simpler])
-        comb_strat8 = CombinationStrategy([macd_cross, bbands, dmi])
-        comb_strat9 = CombinationStrategy([rsi       , bbands, dmi])
 
-        comb_strat_all = CombinationStrategy([sma_cross, ema_cross, macd_cross, bbands, dmi, momentum, rsi, simpler])
-        comb_strat_all.set_strategy_name("all")
-        """
-
+# ---------------------------------------------------------------
         # 取引シミュレーション
         print(symbol, end=" ")
         print_df_date(START)
         print_df_date(END)
         print("\n")
 
-
-        #"""
-        #simulate_trade(sma_cross  , close)
-        #simulate_trade(ema_cross  , close)
+        """
+        simulate_trade(sma_cross  , close)
+        simulate_trade(ema_cross  , close)
         simulate_trade(macd_cross  , close)
         simulate_trade(bbands2     , close)
         simulate_trade(bbands3     , close)
-        #simulate_trade(dmi        , close)
-        #simulate_trade(momentum   , close)
-        #simulate_trade(rsi        , close)
-        #"""
-        simulate_trade(macd_bb2   , close)
-        simulate_trade(macd_bb3   , close)
-        simulate_trade(u1         , close)
+        simulate_trade(dmi        , close)
+        simulate_trade(momentum   , close)
+        simulate_trade(rsi        , close)
 
-        """
-        simulate_trade(comb_strat1, close)
-        simulate_trade(comb_strat2, close)
-        simulate_trade(comb_strat3, close)
-        simulate_trade(comb_strat4, close)
-        simulate_trade(comb_strat5, close)
-        simulate_trade(comb_strat6, close)
-        simulate_trade(comb_strat7, close)
-        simulate_trade(comb_strat8, close)
-        simulate_trade(comb_strat9, close)
-        simulate_trade(comb_strat_all, close)
+        simulate_trade(umacd_bb2_fp, close)
+        simulate_trade(macd_fp     , close)
+        simulate_trade(umacd_rsi   , close)
         """
 
-def simulate_trade(strategy, df_prices):
-    # strategy.set_latest_buy_price(None)
+        # ToDo: (simulate)関数化
+        strats = (sma_cross, ema_cross, macd_cross, bbands2, bbands3, dmi, momentum, rsi)
 
+        strat_names = []
+        profits     = []
+        sell_counts = []
+        buy_counts  = []
+        symbols     = []
+        starts      = []
+        ends        = []
+
+        for strat1 in strats:
+            for strat2 in strats:
+                ustrat = UniqueStrategy1([strat1], [strat2, simpler])
+
+                strat_names.append(ustrat.get_strategy_name())
+                profit, sell_count, buy_count = simulate_trade(ustrat, close)
+                profits.append(profit)
+                sell_counts.append(sell_count)
+                buy_counts.append(buy_count)
+
+        symbols = [symbol] * (len(strats)**2)
+        starts  = [START]  * (len(strats)**2)
+        ends    = [END]    * (len(strats)**2)
+
+        columns = ('strat', 'profit', 'sell_count', 'buy_count', 'symbol', 'start', 'end')
+        values  = (strat_names, profits, sell_counts, buy_counts, symbols, starts, ends)
+
+
+        results = pd.DataFrame(data={'strat': strat_names, 'profit': profits, \
+            'sell_count': sell_counts, 'buy_count': buy_counts, \
+                'symbol': symbols, 'start': starts, 'end': ends}, colums=columns)
+
+        print_sorted_df(results, 'profit'    , False)
+        print_sorted_df(results, 'sell_count', False)
+        print_sorted_df(results, 'buy_count' , False)
+
+
+# ---------------------------------------------------------------
+def simulate_trade(strat, df_prices):
+    strat.set_latest_buy_price(None) # 初期化に必要
     sell_dic = {}
     buy_dic  = {}
 
@@ -155,25 +172,28 @@ def simulate_trade(strategy, df_prices):
         latest_date  = df_prices.index[i]
         latest_price = df_prices[i]
 
-        if strategy.should_buy(i):
+        if strat.should_buy(i):
             # print_order(latest_date, latest_price, "buy")
-            strategy.set_latest_buy_price(latest_price)
+            strat.set_latest_buy_price(latest_price)
 
             buy_dic[latest_date] = latest_price
     
-        if strategy.should_sell(i):
+        if strat.should_sell(i):
             # print_order(latest_date, latest_price, "sell")
-            strategy.set_latest_buy_price(None)
+            strat.set_latest_buy_price(None)
 
             sell_dic[latest_date] = latest_price
 
-    print("{:20}".format(strategy.get_strategy_name()), end=" ")
-    print_summary_result(sell_dic, buy_dic)
-    # print_final_result(sell_dic, buy_dic)
+    print("{:20}".format(strat.get_strategy_name()), end=" ")
+    total_profit = print_summary_result(sell_dic, buy_dic)
+    # total_profit = print_final_result(sell_dic, buy_dic)
 
     # strategy.plot_df_indicator()
 
-    return sell_dic, buy_dic
+    return total_profit, len(sell_dic), len(buy_dic)
+
+
+
 
 
 if __name__ == '__main__':

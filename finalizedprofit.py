@@ -28,9 +28,6 @@ class FinalizedProfit(Strategy):
         return False
 
     def should_buy(self, i):
-        if self.latest_buy_price:
-            return False
-
         return False
 
     def set_profit_ratio(self, profit_ratio):

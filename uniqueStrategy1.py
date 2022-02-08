@@ -7,8 +7,8 @@ from plot_funcs import plot_df
 class UniqueStrategy1(CombinationStrategy):
     def __init__(self, buy_strategies, sell_strategies):
         # 深いコピー
-        self.strategies = copy.copy(buy_strategies)
-        self.strategies.extend(sell_strategies)
+        self.strategies = buy_strategies + sell_strategies
+
         # 重複要素削除
         self.strategies = list(OrderedDict.fromkeys(self.strategies))
 
@@ -32,22 +32,30 @@ class UniqueStrategy1(CombinationStrategy):
                 return True
         return False
 
-    """
-    def set_latest_buy_price(self, buy_price):
-        for strat in self.strategies:
-            strat.set_latest_buy_price(buy_price)
-
     def set_strategy_name(self, strat_names=None):
         if type(strat_names) is str:
             self.strat_name = strat_names
             return
 
-        if strat_names is None:
-            strat_names = []
-            for strat in self.strategies:
-                strat_names.append(strat.get_strategy_name())
+        if strat_names:
+            self.strat_name = '_'.join(strat_names)
+            return
 
-        self.strat_name = '_'.join(strat_names)
+        buy_strat_names  = []
+        for strat in self.buy_strats:
+            buy_strat_names.append(strat.get_strategy_name())
+
+        sell_strat_names = []
+        for strat in self.sell_strats:
+            sell_strat_names.append(strat.get_strategy_name())
+
+        self.strat_name = '_'.join(buy_strat_names) + '--' + '_'.join(sell_strat_names)
+
+
+    """
+    def set_latest_buy_price(self, buy_price):
+        for strat in self.strategies:
+            strat.set_latest_buy_price(buy_price)
 
     def get_strategy_name(self):
         return self.strat_name

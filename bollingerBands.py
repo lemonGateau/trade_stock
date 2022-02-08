@@ -16,7 +16,7 @@ class BolligerBands(Strategy):
         self.set_lower(coef=3)
 
         self.set_latest_buy_price(None)
-        self.set_strategy_name("bbands")
+        self.set_strategy_name("bb")
 
         # print(self.df)
 
