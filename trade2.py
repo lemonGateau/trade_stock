@@ -1,3 +1,5 @@
+import enum
+from lib2to3.pgen2.literals import simple_escapes
 from optparse import Values
 from xmlrpc.client import FastParser
 from pandas_datareader import data
@@ -86,7 +88,7 @@ def main():
         rsi = RsiCutler(RSI_SELL_RATIO, RSI_BUY_RATIO)
         rsi.compute_rsi(close, RSI_CUTLER_TERM)
 
-        simpler = FinalizedProfit(close, PROFIT_RATIO, LOSS_RATIO)
+        fp = FinalizedProfit(close, PROFIT_RATIO, LOSS_RATIO)
 
         df_dmi = dmi.build_df_indicator()
         df_bb  = bbands2.build_df_indicator()
@@ -97,9 +99,9 @@ def main():
         df = df.loc[:, ~df.columns.duplicated()]    # 重複列を削除
 
 
-        umacd_bb2_fp = UniqueStrategy1([macd_cross]         , [bbands2, simpler])
-        macd_fp      = UniqueStrategy1([macd_cross, simpler], [macd_cross, simpler])
-        umacd_rsi    = UniqueStrategy1([macd_cross]         , [rsi])
+        umacd_bb2_fp = UniqueStrategy1([macd_cross]    , [bbands2, fp])
+        macd_fp      = UniqueStrategy1([macd_cross, fp], [macd_cross, fp])
+        umacd_rsi    = UniqueStrategy1([macd_cross]    , [rsi])
 
 
 # ---------------------------------------------------------------
@@ -124,42 +126,26 @@ def main():
         simulate_trade(umacd_rsi   , close)
         """
 
+
         # ToDo: (simulate)関数化
         strats = (sma_cross, ema_cross, macd_cross, bbands2, bbands3, dmi, momentum, rsi)
+        # strats = (sma_cross, ema_cross, macd_cross)
 
-        strat_names = []
-        profits     = []
-        sell_counts = []
-        buy_counts  = []
-        symbols     = []
-        starts      = []
-        ends        = []
+        results1 = simulate_grand_trade(strats, close, required_buy_strats=[], required_sell_strats=[fp])
+        results2 = simulate_grand_trade(strats, close, required_buy_strats=[], required_sell_strats=[])
 
-        for strat1 in strats:
-            for strat2 in strats:
-                ustrat = UniqueStrategy1([strat1], [strat2, simpler])
+        add_columns = generate_constant_df(values=(symbol, START, END), keys=('symbol', 'start', 'end'), length=len(results1.index))
 
-                strat_names.append(ustrat.get_strategy_name())
-                profit, sell_count, buy_count = simulate_trade(ustrat, close)
-                profits.append(profit)
-                sell_counts.append(sell_count)
-                buy_counts.append(buy_count)
+        results1 = pd.concat([results1, add_columns], axis=1)
+        results2 = pd.concat([results2, add_columns], axis=1)
 
-        symbols = [symbol] * (len(strats)**2)
-        starts  = [START]  * (len(strats)**2)
-        ends    = [END]    * (len(strats)**2)
+        print_sorted_df(results1, 'profit'    , False)
+        print_sorted_df(results1, 'sell_count', False)
+        print_sorted_df(results1, 'buy_count' , False)
 
-        columns = ('strat', 'profit', 'sell_count', 'buy_count', 'symbol', 'start', 'end')
-        values  = (strat_names, profits, sell_counts, buy_counts, symbols, starts, ends)
-
-
-        results = pd.DataFrame(data={'strat': strat_names, 'profit': profits, \
-            'sell_count': sell_counts, 'buy_count': buy_counts, \
-                'symbol': symbols, 'start': starts, 'end': ends}, colums=columns)
-
-        print_sorted_df(results, 'profit'    , False)
-        print_sorted_df(results, 'sell_count', False)
-        print_sorted_df(results, 'buy_count' , False)
+        print_sorted_df(results2, 'profit'    , False)
+        print_sorted_df(results2, 'sell_count', False)
+        print_sorted_df(results2, 'buy_count' , False)
 
 
 # ---------------------------------------------------------------
@@ -192,6 +178,41 @@ def simulate_trade(strat, df_prices):
 
     return total_profit, len(sell_dic), len(buy_dic)
 
+
+def simulate_grand_trade(strats, df_prices, required_buy_strats=[], required_sell_strats=[]):
+    buy_strats  = required_buy_strats
+    sell_strats = required_sell_strats
+
+    strat_names = []
+    profits     = []
+    sell_counts = []
+    buy_counts  = []
+
+    for buy_strat in strats:
+        for sell_strat in strats:
+            ustrat = UniqueStrategy1(buy_strats + [buy_strat], sell_strats + [sell_strat])
+            profit, sell_count, buy_count = simulate_trade(ustrat, df_prices)
+
+            strat_names.append(ustrat.get_strategy_name())
+            profits.append(profit)
+            sell_counts.append(sell_count)
+            buy_counts.append(buy_count)
+
+    columns = ('strat', 'profit', 'sell_count', 'buy_count')
+    values  = (strat_names, profits, sell_counts, buy_counts)
+
+    return pd.DataFrame(data={'strat': strat_names, 'profit': profits, \
+        'sell_count': sell_counts, 'buy_count': buy_counts}, columns=columns)
+
+
+
+def generate_constant_df(values, keys, length):
+    data = {}
+
+    for i, value in enumerate(values):
+        data[keys[i]] = [value] * length
+
+    return pd.DataFrame(data=data, columns=keys)
 
 
 
