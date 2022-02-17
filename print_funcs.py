@@ -23,3 +23,19 @@ def print_all_trade_hist(trade_dic):
 
 def print_sorted_df(df, by="profit", ascending=True):
     print(df.sort_values(by=by, ascending=ascending))
+    print("\n")
+
+
+def print_extract_strats_df(df, buy_strat="", sell_strat=""):
+    ''' 特定の戦略を含む取引結果を表示する ''' 
+    # -- より前(買い戦略)と -- より後(売り戦略)に分割
+    buy_strats  = df['strat'].str.split(pat='--', expand=True)[0]
+    sell_strats = df['strat'].str.split(pat='--', expand=True)[1]
+
+    if buy_strat:
+        df = df.loc[buy_strats.str.contains(buy_strat)]
+    if sell_strat:
+        df = df.loc[sell_strats.str.contains(sell_strat)]
+
+    print("{:6}--{:6}".format(buy_strat, sell_strat))
+    print_sorted_df(df, 'profit', False)

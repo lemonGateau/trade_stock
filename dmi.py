@@ -7,9 +7,10 @@ from indicator_funcs import generate_sma, generate_ema, is_crossover
 from strategy import Strategy
 
 class Dmi(Strategy):
-    def __init__(self, df_high, df_low, adx_term, adxr_term):
-        self.high = df_high
-        self.low  = df_low
+    def __init__(self, df_close, df_high, df_low, adx_term, adxr_term):
+        self.close = df_close
+        self.high  = df_high
+        self.low   = df_low
 
         self.compute_tr()
         self.compute_dms()
@@ -42,9 +43,9 @@ class Dmi(Strategy):
         return False
 
     def compute_tr(self):
-        t1 = self.high        - self.low
-        t2 = self.high        - self.low.shift()
-        t3 = self.low.shift() - self.low
+        t1 = self.high          - self.low
+        t2 = self.high          - self.close.shift()
+        t3 = self.close.shift() - self.low
 
         self.tr = pd.concat([t1, t2, t3], axis=1).max(axis=1)
 

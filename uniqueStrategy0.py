@@ -17,5 +17,4 @@ class UniqueStrategy0(CombinationStrategy):
         self.set_strategy_name("u1")    # ToDo: entryとexitから命名
 
     def should_buy(self, i):
-        if is_entryed():
-            pass
+        pass
