@@ -8,6 +8,7 @@ from plot_funcs import  plot_df
 from indicator_funcs import *
 from util import *
 from simulater import *
+from fetch_data import fetch_short_ohlcv
 
 from cross import Cross
 from bollingerBands import BolligerBands
@@ -26,10 +27,10 @@ def main():
 
     # SYMBOLS = ["^N225"]
     # SYMBOLS = ["4347.T"]
-    SYMBOLS = ["3666.T"]
+    # SYMBOLS = ["3666.T"]
     # SYMBOLS = ["4776.T", "4347.T", "8226.T"]
     # SYMBOLS = ["BTC-JPY", "ETH-JPY", "XEM-JPY"]
-    # SYMBOLS = ["BTC-JPY"]
+    SYMBOLS = ["BTC-JPY"]
     SOURCE  = "yahoo"
 
     SHORT_TERM         = 12
@@ -50,11 +51,14 @@ def main():
     dfs = {}
 
     for symbol in SYMBOLS:
-        dfs[symbol] = fetch_short_bars(symbol)
+        dfs[symbol] = fetch_short_ohlcv(symbol)
         #dfs[symbol] = data.DataReader(symbol, SOURCE, START, END)
 
         df = dfs[symbol]
         close = df["Adj Close"]
+
+        START = df.index[0]
+        END   = df.index[-1]
 
         # 取引戦略
         df["sma_short"]   = generate_sma(close, SHORT_TERM)
@@ -102,6 +106,12 @@ def main():
         df = pd.concat([df, df_dmi, df_bb2, df_mom, df_rsi], axis=1)
         df = df.loc[:, ~df.columns.duplicated()]    # 重複列を削除
 
+        # ToDo: 関数化
+        CSV_PATH = "C:\\Users\\manab\\github_\\trade_stock\\1d.csv"
+        df.to_csv(CSV_PATH, index=True, encoding='utf8')
+
+
+
 # ---------------------------------------------------------------
         # 取引シミュレーション
         print(symbol, end=" ")
@@ -126,60 +136,24 @@ def main():
         results2 = simulate_grand_trade(strats, close, required_buy_strats=[]          , required_sell_strats=[])
         results3 = simulate_grand_trade(strats, close, required_buy_strats=[macd_cross], required_sell_strats=[])
 
-
         add_columns = generate_constant_df(values=(symbol, START, END), keys=('symbol', 'start', 'end'), length=len(results2.index))
         results1 = pd.concat([results1, add_columns], axis=1)
         results2 = pd.concat([results2, add_columns], axis=1)
         results3 = pd.concat([results3, add_columns], axis=1)
 
-
         print_sorted_df(results1, 'profit'    , False)
         print_sorted_df(results2, 'profit'    , False)
         print_sorted_df(results3, 'profit'    , False)
 
+
         # print_sorted_df(results1, 'sell_count', False)
         # print_sorted_df(results2, 'sell_count', False)
 
-        print_extract_strats_df(results1, "", "dmi")
-        print_extract_strats_df(results2, "macd")
+        # print_extract_strats_df(results1, "", "dmi")
+        # print_extract_strats_df(results2, "macd")
 
 
 
-
-import json
-import requests
-from io import StringIO
-from process_file import *
-
-def fetch_short_bars(symbol):
-    URL = f"https://query1.finance.yahoo.com/v7/finance/chart/{symbol}?range=1d&interval=1m&indicators=quote&includeTimestamps=true"
-    # URL = "https://query1.finance.yahoo.com/v7/finance/chart/3666.T?range=1d&interval=1m&indicators=quote&includeTimestamps=true"
-
-    CSV_PATH = "C:\\Users\\manab\\github_\\trade_stock\\1d.csv"
-    TXT_PATH = "C:\\Users\\manab\\github_\\trade_stock\\data2.txt"
-
-    """
-    r = requests.get(URL)
-    print(r)
-    s = StringIO(r.text)
-    j = json.load(s)
-    """
-
-    j = json_read(TXT_PATH)
-
-    df = pd.DataFrame()
-    df['Open'] = j['chart']['result'][0]['indicators']['quote'][0]['open']
-    df['Low'] = j['chart']['result'][0]['indicators']['quote'][0]['low']
-    df['High'] = j['chart']['result'][0]['indicators']['quote'][0]['high']
-    df['Adj Close'] = j['chart']['result'][0]['indicators']['quote'][0]['close']
-    df['Volume'] = j['chart']['result'][0]['indicators']['quote'][0]['volume']
-    df.index = pd.to_datetime(j['chart']['result'][0]['timestamp'], unit="s")
-
-    df = df.dropna()
-    df.to_csv(CSV_PATH, index=False, encoding='utf8')
-
-    print(df)
-    return df
 
 
 if __name__ == '__main__':
