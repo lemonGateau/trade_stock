@@ -8,7 +8,7 @@ from plot_funcs import  plot_df
 from indicator_funcs import *
 from util import *
 from simulater import *
-from fetch_data import fetch_short_ohlcv
+from fetch_data import *
 
 from cross import Cross
 from bollingerBands import BolligerBands
@@ -29,8 +29,8 @@ def main():
     # SYMBOLS = ["4347.T"]
     # SYMBOLS = ["3666.T"]
     # SYMBOLS = ["4776.T", "4347.T", "8226.T"]
-    # SYMBOLS = ["BTC-JPY", "ETH-JPY", "XEM-JPY"]
-    SYMBOLS = ["BTC-JPY"]
+    SYMBOLS = ["BTC-JPY", "ETH-JPY", "XEM-JPY"]
+    # SYMBOLS = ["BTC-JPY"]
     SOURCE  = "yahoo"
 
     SHORT_TERM         = 12
@@ -51,14 +51,18 @@ def main():
     dfs = {}
 
     for symbol in SYMBOLS:
-        dfs[symbol] = fetch_short_ohlcv(symbol)
-        #dfs[symbol] = data.DataReader(symbol, SOURCE, START, END)
+        # ToDo: 関数名称等見直し
+        js_yahoo = fetch_yahoo_past_data(symbol=symbol, range="7d", interval="5m")
+        df = extract_ohlcv(js_yahoo)
 
-        df = dfs[symbol]
-        close = df["Adj Close"]
+        # df = data.DataReader(symbol, SOURCE, START, END)
+
+        print(df)
 
         START = df.index[0]
         END   = df.index[-1]
+
+        close = df["Adj Close"]
 
         # 取引戦略
         df["sma_short"]   = generate_sma(close, SHORT_TERM)
@@ -78,11 +82,10 @@ def main():
         macd_cross.set_strategy_name("macd")
 
         bbands2 = BolligerBands(close, B_BANDS_TERM)
-        bbands2.set_upper(coef=2)
-        bbands2.set_lower(coef=2)
-
         bbands3 = BolligerBands(close, B_BANDS_TERM)
 
+        bbands2.set_upper(coef=2)
+        bbands2.set_lower(coef=2)
         bbands2.set_strategy_name("bb2")
         bbands3.set_strategy_name("bb3")
 
@@ -107,9 +110,8 @@ def main():
         df = df.loc[:, ~df.columns.duplicated()]    # 重複列を削除
 
         # ToDo: 関数化
-        CSV_PATH = "C:\\Users\\manab\\github_\\trade_stock\\1d.csv"
-        df.to_csv(CSV_PATH, index=True, encoding='utf8')
-
+        # CSV_PATH = "C:\\Users\\manab\\github_\\trade_stock\\1d2.csv"
+        # df.to_csv(CSV_PATH, index=True, encoding='utf8')
 
 
 # ---------------------------------------------------------------
@@ -119,32 +121,17 @@ def main():
         print_df_date(END)
         print("\n")
 
-        """
-        simulate_trade(macd_cross, close)
-
-        umacd_bb2_fp = UniqueStrategy1([macd_cross], [bbands2   , fp])
-        umacd_rsi    = UniqueStrategy1([macd_cross], [rsi])
-
-        simulate_trade(umacd_bb2_fp, close)
-        simulate_trade(umacd_rsi   , close)
-        """
-
         strats = (sma_cross, ema_cross, macd_cross, bbands2, bbands3, dmi, momentum, rsi)
-        # strats = (sma_cross, ema_cross, macd_cross)
 
         results1 = simulate_grand_trade(strats, close, required_buy_strats=[]          , required_sell_strats=[fp])
         results2 = simulate_grand_trade(strats, close, required_buy_strats=[]          , required_sell_strats=[])
-        results3 = simulate_grand_trade(strats, close, required_buy_strats=[macd_cross], required_sell_strats=[])
 
         add_columns = generate_constant_df(values=(symbol, START, END), keys=('symbol', 'start', 'end'), length=len(results2.index))
         results1 = pd.concat([results1, add_columns], axis=1)
         results2 = pd.concat([results2, add_columns], axis=1)
-        results3 = pd.concat([results3, add_columns], axis=1)
 
         print_sorted_df(results1, 'profit'    , False)
         print_sorted_df(results2, 'profit'    , False)
-        print_sorted_df(results3, 'profit'    , False)
-
 
         # print_sorted_df(results1, 'sell_count', False)
         # print_sorted_df(results2, 'sell_count', False)
@@ -158,6 +145,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
 
