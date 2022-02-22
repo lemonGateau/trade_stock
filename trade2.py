@@ -21,16 +21,14 @@ from uniqueStrategy1 import UniqueStrategy1
 
 
 def main():
+    START = datetime.datetime(2017, 1, 1)
     END   = datetime.datetime.today().date()
-    # START = datetime.datetime(2017, 1, 1)
-    START = END - datetime.timedelta(days=365*5)
 
     # SYMBOLS = ["^N225"]
-    # SYMBOLS = ["4347.T"]
     # SYMBOLS = ["3666.T"]
     # SYMBOLS = ["4776.T", "4347.T", "8226.T"]
-    SYMBOLS = ["BTC-JPY", "ETH-JPY", "XEM-JPY"]
-    # SYMBOLS = ["BTC-JPY"]
+    # SYMBOLS = ["BTC-JPY", "ETH-JPY", "XEM-JPY"]
+    SYMBOLS = ["BTC-JPY", "ETH-JPY"]
     SOURCE  = "yahoo"
 
     SHORT_TERM         = 12
@@ -52,15 +50,14 @@ def main():
 
     for symbol in SYMBOLS:
         # ToDo: 関数名称等見直し
-        js_yahoo = fetch_yahoo_past_data(symbol=symbol, range="7d", interval="5m")
+        js_yahoo = fetch_yahoo_past_data(symbol=symbol, range="7d", interval="1m")
         df = extract_ohlcv(js_yahoo)
+        START = df.index[0]
+        END   = df.index[-1]
 
         # df = data.DataReader(symbol, SOURCE, START, END)
 
         print(df)
-
-        START = df.index[0]
-        END   = df.index[-1]
 
         close = df["Adj Close"]
 
@@ -116,15 +113,12 @@ def main():
 
 # ---------------------------------------------------------------
         # 取引シミュレーション
-        print(symbol, end=" ")
-        print_df_date(START)
-        print_df_date(END)
-        print("\n")
+        print_simulation_conditions(symbol, START, END)
 
         strats = (sma_cross, ema_cross, macd_cross, bbands2, bbands3, dmi, momentum, rsi)
 
-        results1 = simulate_grand_trade(strats, close, required_buy_strats=[]          , required_sell_strats=[fp])
-        results2 = simulate_grand_trade(strats, close, required_buy_strats=[]          , required_sell_strats=[])
+        results1 = simulate_grand_trade(strats, close, required_buy_strats=[], required_sell_strats=[fp])
+        results2 = simulate_grand_trade(strats, close, required_buy_strats=[], required_sell_strats=[])
 
         add_columns = generate_constant_df(values=(symbol, START, END), keys=('symbol', 'start', 'end'), length=len(results2.index))
         results1 = pd.concat([results1, add_columns], axis=1)

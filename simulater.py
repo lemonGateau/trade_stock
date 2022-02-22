@@ -59,3 +59,6 @@ def simulate_grand_trade(strats, df_prices, required_buy_strats=[], required_sel
 
     return pd.DataFrame(data={'strategy': strat_names, 'profit': profits, \
         'sell_count': sell_counts, 'buy_count': buy_counts}, columns=columns)
+
+
+
