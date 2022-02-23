@@ -1,10 +1,10 @@
 import pandas as pd
-from indicator_funcs import *
-from plot_funcs import plot_df
-from print_funcs import *
+from common.indicator_funcs import *
+from common.plot_funcs import plot_df
+from common.print_funcs import *
 from strategy import Strategy
 
-class BolligerBands(Strategy):
+class BollingerBands(Strategy):
     def __init__(self, df_close, term):
         self.df = pd.DataFrame()
 

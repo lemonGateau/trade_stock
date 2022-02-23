@@ -1,6 +1,8 @@
 import pandas as pd
-from indicator_funcs import should_realize_profit, should_stop_loss
-from plot_funcs import plot_df
+
+from common.indicator_funcs import *
+from common.plot_funcs import plot_df
+from common.print_funcs import *
 from strategy import Strategy
 
 class FinalizedProfit(Strategy):

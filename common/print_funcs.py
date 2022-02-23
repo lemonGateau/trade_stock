@@ -10,7 +10,7 @@ def print_simulation_conditions(symbol, start, end):
 
 def print_prices(price_list):
     for price in price_list:
-        print(f'{int(price):>6d}', end=" ")
+        print(f'{int(price):>10d}', end=" ")
 
     print("\n", end="")
 

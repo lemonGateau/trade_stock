@@ -1,7 +1,7 @@
 import pandas as pd
-from print_funcs import *
-from profit_funcs import *
-from uniqueStrategy1 import UniqueStrategy1
+from common.print_funcs import *
+from common.profit_funcs import *
+from combinationStrategy import CombinationStrategy
 
 
 def simulate_trade(strat, df_prices):
@@ -29,7 +29,7 @@ def simulate_trade(strat, df_prices):
     total_profit = print_summary_result(sell_dic, buy_dic)
     # total_profit = print_final_result(sell_dic, buy_dic)
 
-    # strat.plot_df_indicator()
+    strat.plot_df_indicator()
 
     return total_profit, len(sell_dic), len(buy_dic)
 

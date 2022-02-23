@@ -1,11 +1,12 @@
 import pandas as pd
-from indicator_funcs import generate_ema
-from plot_funcs import plot_df
-from print_funcs import *
+
+from common.indicator_funcs import *
+from common.plot_funcs import plot_df
+from common.print_funcs import *
 from strategy import Strategy
 
 
-class RsiCutler(Strategy):
+class Rsi(Strategy):
     def __init__(self, sell_ratio=0.7, buy_ratio=0.3):
         self.set_sell_ratio(sell_ratio)
         self.set_buy_ratio(buy_ratio)

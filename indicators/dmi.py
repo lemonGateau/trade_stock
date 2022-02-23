@@ -2,8 +2,9 @@ from pandas_datareader import data
 import pandas as pd
 import datetime
 
-from plot_funcs import plot_df
-from indicator_funcs import generate_sma, generate_ema, is_crossover
+from common.indicator_funcs import *
+from common.plot_funcs import plot_df
+from common.print_funcs import *
 from strategy import Strategy
 
 class Dmi(Strategy):
