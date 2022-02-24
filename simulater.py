@@ -1,10 +1,10 @@
 import pandas as pd
 from common.print_funcs import *
 from common.profit_funcs import *
-from combinationStrategy import CombinationStrategy
+from indicators import CombinationStrategy
 
 
-def simulate_trade(strat, df_prices):
+def simulate_trade(strat, df_prices, enable_plot=False, show_detail=False):
     strat.set_latest_buy_price(None) # 初期化に必要
     sell_dic = {}
     buy_dic  = {}
@@ -26,15 +26,19 @@ def simulate_trade(strat, df_prices):
             sell_dic[latest_date] = latest_price
 
     print("{:20}".format(strat.get_strategy_name()), end=" ")
-    total_profit = print_summary_result(sell_dic, buy_dic)
-    # total_profit = print_final_result(sell_dic, buy_dic)
 
-    strat.plot_df_indicator()
+    if show_detail:
+        total_profit = print_final_result(sell_dic, buy_dic)
+    else:
+        total_profit = print_summary_result(sell_dic, buy_dic)
+
+    if enable_plot:
+        strat.plot_df_indicator()
 
     return total_profit, len(sell_dic), len(buy_dic)
 
 
-def simulate_grand_trade(strats, df_prices, required_buy_strats=[], required_sell_strats=[]):
+def simulate_grand_trade(strats, df_prices, required_buy_strats=[], required_sell_strats=[], enable_plot=False, show_detail=False):
     ''' stratsの全組み合わせでシミュレート '''
     buy_strats  = required_buy_strats
     sell_strats = required_sell_strats
@@ -46,8 +50,8 @@ def simulate_grand_trade(strats, df_prices, required_buy_strats=[], required_sel
 
     for buy_strat in strats:
         for sell_strat in strats:
-            ustrat = UniqueStrategy1(buy_strats + [buy_strat], sell_strats + [sell_strat])
-            profit, sell_count, buy_count = simulate_trade(ustrat, df_prices)
+            ustrat = CombinationStrategy(buy_strats + [buy_strat], sell_strats + [sell_strat])
+            profit, sell_count, buy_count = simulate_trade(ustrat, df_prices, enable_plot, show_detail)
 
             strat_names.append(ustrat.get_strategy_name())
             profits.append(profit)

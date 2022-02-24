@@ -1,5 +1,7 @@
+from cgitb import enable
 import sys
 sys.path.append('..')
+
 from pandas_datareader import data
 import pandas as pd
 import datetime
@@ -13,7 +15,6 @@ from common.fetch_data import *
 
 from util import *
 from simulater import *
-from combinationStrategy import CombinationStrategy
 
 
 def main():
@@ -42,7 +43,7 @@ def main():
     RSI_SELL_RATIO   = 0.7
     RSI_BUY_RATIO    = 0.3
 
-    RANGE    = "10d"
+    RANGE    = "100d"
     INTERVAL = "1h"
 
     for symbol in SYMBOLS:
@@ -104,34 +105,28 @@ def main():
         # df = pd.concat([df, df_dmi, df_bb2, df_mom, df_rsi], axis=1)
         # df = df.loc[:, ~df.columns.duplicated()]    # 重複列を削除
 
-        # ToDo: 関数化
-        # CSV_PATH = "C:\\Users\\manab\\github_\\trade_stock\\1d2.csv"
-        # df.to_csv(CSV_PATH, index=True, encoding='utf8')
-
-
 # ---------------------------------------------------------------
         # 取引シミュレーション
         print_simulation_conditions(symbol, START, END)
 
         strats = (sma_cross, ema_cross, macd_cross, bbands2, bbands3, dmi, momentum, rsi)
 
-        #results1 = simulate_grand_trade(strats, close, required_buy_strats=[], required_sell_strats=[fp])
-        results2 = simulate_grand_trade(strats, close, required_buy_strats=[], required_sell_strats=[])
+        results2 = simulate_grand_trade(strats, close, [], [], enable_plot=False, show_detail=False)
 
         add_columns = generate_constant_df(values=(symbol, START, END), keys=('symbol', 'start', 'end'), length=len(results2.index))
-        #results1 = pd.concat([results1, add_columns], axis=1)
         results2 = pd.concat([results2, add_columns], axis=1)
 
-        #print_sorted_df(results1, 'profit'    , False)
-        print_sorted_df(results2, 'profit'    , False)
+        results2['profit'] *= 0.01
+        print_sorted_df(results2, 'profit'    , ascending=False)
 
-        # print_sorted_df(results1, 'sell_count', False)
         # print_sorted_df(results2, 'sell_count', False)
 
-        print_extract_strats_df(results2, "", "dmi")
-        print_extract_strats_df(results2, "dmi", "")
+        # print_extract_strats_df(results2, "", "dmi")
+        # print_extract_strats_df(results2, "dmi", "")
 
-
+        # ToDo: 関数化
+        CSV_PATH = f"C:\\Users\\manab\\github_\\trade_stock\\csv_data\\{datetime.datetime.today().date()}.csv"
+        results2.sort_values(by='profit', ascending=False).to_csv(CSV_PATH, index=True, encoding='utf8')
 
 
 
