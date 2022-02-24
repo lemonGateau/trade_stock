@@ -1,8 +1,15 @@
+import sys, os
+sys.path.append("..")
+
 import pandas as pd
 from common.print_funcs import *
 from common.profit_funcs import *
-from indicators import CombinationStrategy
 
+# ImportError: attempted relative import with no known parent package
+try:
+    from ..indicators import CombinationStrategy
+except:
+    from indicators import CombinationStrategy
 
 def simulate_trade(strat, df_prices, enable_plot=False, show_detail=False):
     strat.set_latest_buy_price(None) # 初期化に必要

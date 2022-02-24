@@ -1,12 +1,10 @@
-from cgitb import enable
-import sys
-sys.path.append('..')
+import sys, os
+sys.path.append("..")
 
 from pandas_datareader import data
 import pandas as pd
 import datetime
 
-from indicators import *
 from common.print_funcs import *
 from common.profit_funcs import *
 from common.plot_funcs import  plot_df
@@ -16,6 +14,11 @@ from common.fetch_data import *
 from util import *
 from simulater import *
 
+# ImportError: attempted relative import with no known parent package
+try:
+    from ..indicators import *
+except:
+    from indicators import *
 
 def main():
     START = datetime.datetime(2017, 1, 1)
@@ -43,8 +46,8 @@ def main():
     RSI_SELL_RATIO   = 0.7
     RSI_BUY_RATIO    = 0.3
 
-    RANGE    = "100d"
-    INTERVAL = "1h"
+    RANGE    = "1d"
+    INTERVAL = "5m"
 
     for symbol in SYMBOLS:
         # ToDo: 関数名称等見直し
