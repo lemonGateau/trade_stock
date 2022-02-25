@@ -1,6 +1,5 @@
 import pandas as pd
 
-
 def confirm_smaller_length(list1, list2):
     if len(list1) < len(list2):
         return len(list1)
@@ -20,4 +19,3 @@ def generate_constant_df(values, keys, length):
         data[keys[i]] = [value] * length
 
     return pd.DataFrame(data=data, columns=keys)
-

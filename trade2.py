@@ -1,17 +1,17 @@
-import sys, os
+import sys
 sys.path.append("..")
 
 from pandas_datareader import data
 import pandas as pd
-import datetime
+from datetime import datetime
 
 from common.print_funcs import *
 from common.profit_funcs import *
 from common.plot_funcs import  plot_df
 from common.indicator_funcs import *
-from common.fetch_data import *
 
 from util import *
+from io_data import *
 from simulater import *
 
 # ImportError: attempted relative import with no known parent package
@@ -21,16 +21,6 @@ except:
     from indicators import *
 
 def main():
-    START = datetime.datetime(2017, 1, 1)
-    END   = datetime.datetime.today().date()
-
-    # SYMBOLS = ["^N225"]
-    # SYMBOLS = ["3666.T"]
-    # SYMBOLS = ["4776.T", "4347.T", "8226.T"]
-    # SYMBOLS = ["BTC-JPY", "ETH-JPY", "XEM-JPY"]
-    SYMBOLS = ["BTC-JPY"]
-    SOURCE  = "yahoo"
-
     SHORT_TERM       = 12
     LONG_TERM        = 25
     MACD_SIGNAL_TERM = 9
@@ -46,90 +36,95 @@ def main():
     RSI_SELL_RATIO   = 0.7
     RSI_BUY_RATIO    = 0.3
 
-    RANGE    = "1d"
+    symbol = "BTC-JPY"
+
+    # 日足より短
+    RANGE    = "7d"
     INTERVAL = "5m"
 
-    for symbol in SYMBOLS:
-        # ToDo: 関数名称等見直し
-        js_yahoo = fetch_yahoo_past_data(symbol, RANGE, INTERVAL)
-        df = extract_ohlcv(js_yahoo)
+    df = fetch_yahoo_short_bars(symbol, RANGE, INTERVAL)
+    begin = df.index[0]
+    end   = df.index[-1]
 
-        START = df.index[0]
-        END   = df.index[-1]
+    """
+    # 日足以上長
+    SOURCE  = "yahoo"
+    begin = datetime(2017, 1, 1)
+    end   = datetime.today()
 
-        #df = data.DataReader(symbol, SOURCE, START, END)
+    df = data.DataReader(symbol, SOURCE, begin, end)
+    """
 
-        print(df)
 
-        close = df["Adj Close"]
 
-        # 取引戦略
-        df["sma_short"]   = generate_sma(close, SHORT_TERM)
-        df["sma_long"]    = generate_sma(close, LONG_TERM)
-        df["ema_short"]   = generate_ema(close, SHORT_TERM)
-        df["ema_long"]    = generate_ema(close, LONG_TERM)
+    close = df["Adj Close"]
 
-        df["macd"]        = df["ema_short"] - df["ema_long"] 
-        df["macd_signal"] = generate_sma(df["macd"], MACD_SIGNAL_TERM)
+    # 取引戦略
+    df["sma_short"]   = generate_sma(close, SHORT_TERM)
+    df["sma_long"]    = generate_sma(close, LONG_TERM)
+    df["ema_short"]   = generate_ema(close, SHORT_TERM)
+    df["ema_long"]    = generate_ema(close, LONG_TERM)
 
-        sma_cross  = Cross(df["sma_short"], df["sma_long"])
-        ema_cross  = Cross(df["ema_short"], df["ema_long"])
-        macd_cross = Cross(df["macd"]     , df["macd_signal"])
+    df["macd"]        = df["ema_short"] - df["ema_long"] 
+    df["macd_signal"] = generate_sma(df["macd"], MACD_SIGNAL_TERM)
 
-        sma_cross.set_strategy_name("sma")
-        ema_cross.set_strategy_name("ema")
-        macd_cross.set_strategy_name("macd")
+    sma_cross  = Cross(df["sma_short"], df["sma_long"])
+    ema_cross  = Cross(df["ema_short"], df["ema_long"])
+    macd_cross = Cross(df["macd"]     , df["macd_signal"])
 
-        bbands2 = BollingerBands(close, B_BANDS_TERM)
-        bbands3 = BollingerBands(close, B_BANDS_TERM)
+    sma_cross.set_strategy_name("sma")
+    ema_cross.set_strategy_name("ema")
+    macd_cross.set_strategy_name("macd")
 
-        bbands2.set_upper(coef=2)
-        bbands2.set_lower(coef=2)
-        bbands2.set_strategy_name("bb2")
-        bbands3.set_strategy_name("bb3")
+    bbands2 = BollingerBands(close, B_BANDS_TERM)
+    bbands3 = BollingerBands(close, B_BANDS_TERM)
 
-        dmi = Dmi(close, df["High"], df["Low"], ADX_TERM, ADXR_TERM)
+    bbands2.set_upper(coef=2)
+    bbands2.set_lower(coef=2)
+    bbands2.set_strategy_name("bb2")
+    bbands3.set_strategy_name("bb3")
 
-        momentum = Momentum()
-        momentum.compute_moment(close, MOMENTUM_TERM)
-        momentum.generate_signal(MOM_SIGNAL_TERM)
-        momentum.generate_baseline(0)
+    dmi = Dmi(close, df["High"], df["Low"], ADX_TERM, ADXR_TERM)
 
-        rsi = Rsi(RSI_SELL_RATIO, RSI_BUY_RATIO)
-        rsi.compute_rsi(close, RSI_TERM)
+    momentum = Momentum()
+    momentum.compute_moment(close, MOMENTUM_TERM)
+    momentum.generate_signal(MOM_SIGNAL_TERM)
+    momentum.generate_baseline(0)
 
-        fp = FinalizedProfit(close, PROFIT_RATIO, LOSS_RATIO)
+    rsi = Rsi(RSI_SELL_RATIO, RSI_BUY_RATIO)
+    rsi.compute_rsi(close, RSI_TERM)
 
-        # df_dmi = dmi.build_df_indicator()
-        # df_bb2  = bbands2.build_df_indicator()
-        # df_mom = momentum.build_df_indicator()
-        # df_rsi = rsi.build_df_indicator()
+    fp = FinalizedProfit(close, PROFIT_RATIO, LOSS_RATIO)
 
-        # df = pd.concat([df, df_dmi, df_bb2, df_mom, df_rsi], axis=1)
-        # df = df.loc[:, ~df.columns.duplicated()]    # 重複列を削除
+    # df_dmi = dmi.build_df_indicator()
+    # df_bb2  = bbands2.build_df_indicator()
+    # df_mom = momentum.build_df_indicator()
+    # df_rsi = rsi.build_df_indicator()
+
+    # df = pd.concat([df, df_dmi, df_bb2, df_mom, df_rsi], axis=1)
+    # df = df.loc[:, ~df.columns.duplicated()]    # 重複列を削除
+
+
 
 # ---------------------------------------------------------------
-        # 取引シミュレーション
-        print_simulation_conditions(symbol, START, END)
+    # 取引シミュレーション
+    print_simulation_conditions(symbol, begin, end)
 
-        strats = (sma_cross, ema_cross, macd_cross, bbands2, bbands3, dmi, momentum, rsi)
+    strats = (sma_cross, ema_cross, macd_cross, bbands2, bbands3, dmi, momentum, rsi)
 
-        results2 = simulate_grand_trade(strats, close, [], [], enable_plot=False, show_detail=False)
+    results = simulate_grand_trade(strats, close, [], [], show_detail=True, enable_plot=False)
 
-        add_columns = generate_constant_df(values=(symbol, START, END), keys=('symbol', 'start', 'end'), length=len(results2.index))
-        results2 = pd.concat([results2, add_columns], axis=1)
+    results['profit'] *= 0.01
 
-        results2['profit'] *= 0.01
-        print_sorted_df(results2, 'profit'    , ascending=False)
+    sorted = results.sort_values(by="profit", ascending=False)
+    print(sorted)
 
-        # print_sorted_df(results2, 'sell_count', False)
+    FILE_PATH = f"C:\\Users\\manab\\github_\\trade_stock\\csv_data\\{datetime.now.strftime('%Y%m%d_%H%M')}.csv"
+    sorted.to_csv(FILE_PATH, index=True, encoding="utf-8")
 
-        # print_extract_strats_df(results2, "", "dmi")
-        # print_extract_strats_df(results2, "dmi", "")
+    # print_extract_strats_df(results2, "", "dmi")
+    # print_extract_strats_df(results2, "dmi", "")
 
-        # ToDo: 関数化
-        CSV_PATH = f"C:\\Users\\manab\\github_\\trade_stock\\csv_data\\{datetime.datetime.today().date()}.csv"
-        results2.sort_values(by='profit', ascending=False).to_csv(CSV_PATH, index=True, encoding='utf8')
 
 
 
