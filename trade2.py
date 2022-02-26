@@ -1,4 +1,6 @@
 import sys
+from unicodedata import name
+from unittest import result
 sys.path.append("..")
 import os
 
@@ -14,6 +16,7 @@ from common.indicator_funcs import *
 from util import *
 from io_data import *
 from simulater import *
+from simulater2 import Simulater
 
 # ImportError: attempted relative import with no known parent package
 try:
@@ -40,7 +43,7 @@ def main():
     symbol = "BTC-JPY"
 
     # 日足より短
-    RANGE    = "7d"
+    RANGE    = "3d"
     INTERVAL = "5m"
 
     bars = fetch_yahoo_short_bars(symbol, RANGE, INTERVAL)
@@ -95,6 +98,11 @@ def main():
 
     fp = FinalizedProfit(close, PROFIT_RATIO, LOSS_RATIO)
 
+
+    SAVE_DIR = f"C:\\Users\\manab\\github_\\trade_stock\\csv_files\\{datetime.now().strftime('%Y%m%d_%H%M')}"
+    os.mkdir(path = SAVE_DIR)
+
+    """
     dmi_bar = dmi.build_df_indicator()
     bb2_bar = bbands2.build_df_indicator()
     bb3_bar = bbands3.build_df_indicator()
@@ -104,54 +112,45 @@ def main():
     bars = pd.concat([bars, dmi_bar, bb2_bar, bb3_bar, mom_bar, rsi_bar], axis=1)
     bars = bars.loc[:, ~bars.columns.duplicated()]    # 重複列を削除
 
-    SAVE_DIR = f"C:\\Users\\manab\\github_\\trade_stock\\csv_files\\{datetime.now().strftime('%Y%m%d_%H%M')}"
-    os.mkdir(path = SAVE_DIR)
-
     bars.to_csv(SAVE_DIR + "\\bars.csv", index=True, encoding="utf-8")
+    """
 
 # ---------------------------------------------------------------
     # シミュレーション
-    print_simulation_conditions(symbol, begin, end)
+    # ToDo: 実行速度(2022-02-26: 16s)
+    sim = Simulater(symbol, begin, end)
 
     strats = (sma_cross, ema_cross, macd_cross, bbands2, bbands3, dmi, momentum, rsi)
-    """
-    data = pd.DataFrame(data=close, index=bars.index)
 
+    """
+    results = pd.DataFrame(data=close, index=close.index)
     for strat in strats:
-        result = simulate_trade(strat, bars.index, close)
-        data = pd.concat([data, result], axis=1)
-
-    results = data.loc[:, ~data.columns.duplicated()]
+        orders = sim.simulate_trade(close, strat)
+        results[orders.name] = orders
     """
 
-    results = simulate_grand_trade(strats, bars.index, close, [], [])
+    results = sim.simulate_comb_strats_trade(close, strats, [], [])
 
     results.to_csv(SAVE_DIR + "\\orders.csv", index=True, encoding="utf-8")
 
 # ---------------------------------------------------------------
     # 利益計算
-    profits    = []
-    bid_counts = []
-    ask_counts = []
+    profits = pd.DataFrame()
+    for strat_name in results.columns.values[1:]:
+        result = results.loc[:, ["Adj Close", strat_name]].dropna()
+        # print(result, end="\n\n")
 
-    for col in results.columns.values[1:]:
-        bids = results.loc[results[col] == "bid", ["Adj Close", col]]
-        asks = results.loc[results[col] == "ask", ["Adj Close", col]]
+        profit = sim.compute_profit(result)
+        sorted = profits.append(profit)
 
-        bid_counts.append(len(bids.index))
-        ask_counts.append(len(asks.index))
+    #sorted = profits.sort_values(by="profit", ascending=False)
 
-        profits.append(int(sum(asks["Adj Close"]) - sum(bids["Adj Close"][:len(asks.index)])))
-
-    d = pd.DataFrame(data={"profit": profits, "bid_count": bid_counts, "ask_count": ask_counts},\
-         index=results.columns.values[1:])
-
-    sorted = d.sort_values(by="profit", ascending=False)
+    amount = 0.01
+    sorted[str(amount)] = sorted["profit"] * amount
+    sorted.to_csv(SAVE_DIR + "\\profits.csv", index=True, encoding="utf-8")
 
     # print_extract_strats_df(d, "", "dmi")
     # print_extract_strats_df(d, "dmi", "")
-
-    sorted.to_csv(SAVE_DIR + "\\profits.csv", index=True, encoding="utf-8")
 
 # ---------------------------------------------------------------
     # プロット

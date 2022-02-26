@@ -30,9 +30,9 @@ def simulate_trade(strat, dates, prices):
             strat.set_latest_buy_price(None)
             orders[i] = "ask"
 
-    name = strat.get_strategy_name()
+    column = strat.get_strategy_name()
 
-    return pd.DataFrame(data={name: orders}, index=dates)
+    return pd.DataFrame(data={column: orders}, index=dates)
 
 
 
