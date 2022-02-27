@@ -4,15 +4,16 @@ sys.path.append("..")
 from pandas_datareader import data
 import pandas as pd
 import numpy as np
+from time import time
 
 from common.print_funcs import *
-from common.profit_funcs import *
 from io_data import fetch_yahoo_short_bars
 
 try:
     from ..indicators import *
 except:
     from indicators import *
+
 
 class Simulater:
     def __init__(self, symbol, begin, end):
@@ -43,16 +44,16 @@ class Simulater:
 
     def simulate_comb_strats_trade(self, prices, strats, required_buy_strats=[], required_sell_strats=[]):
         ''' stratsの全組み合わせでシミュレート '''
-        buy_strats  = required_buy_strats
-        sell_strats = required_sell_strats
-
         results = pd.DataFrame(data=prices, index=prices.index)
+        start_time = time()
 
         for buy_strat in strats:
+            print(time() - start_time, "simulating", buy_strat)
             for sell_strat in strats:
-                comb_strat = CombinationStrategy(buy_strats + [buy_strat], sell_strats + [sell_strat])
+                buy_strats  = required_buy_strats  + [buy_strat]
+                sell_strats = required_sell_strats + [sell_strat]
 
-                r = self.simulate_trade(prices, comb_strat)
+                r = self.simulate_trade(prices, CombinationStrategy(buy_strats, sell_strats))
                 results[r.name] = r
 
         return results
@@ -72,3 +73,7 @@ class Simulater:
             index=["profit", "bid_count", "ask_count"], name=strat_name)
 
 
+    def extract_strat_profits(self, profits, strat_to_extract):
+        profits = profits.loc[profits.index.str.contains(strat_to_extract)]
+
+        return profits.sort_values(by="profit", ascending=False)

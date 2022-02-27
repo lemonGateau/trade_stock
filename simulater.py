@@ -6,7 +6,6 @@ import pandas as pd
 import numpy as np
 
 from common.print_funcs import *
-from common.profit_funcs import *
 from io_data import fetch_yahoo_short_bars
 
 # ImportError: attempted relative import with no known parent package
@@ -16,7 +15,7 @@ except:
     from indicators import CombinationStrategy
 
 
-def simulate_trade(strat, dates, prices):
+def simulate_trade(dates, prices, strat):
     strat.set_latest_buy_price(None) # 初期化に必要
 
     orders = [np.nan]*len(dates)
@@ -36,17 +35,18 @@ def simulate_trade(strat, dates, prices):
 
 
 
-def simulate_grand_trade(strats, dates, prices, required_buy_strats=[], required_sell_strats=[]):
+def simulate_grand_trade(dates, prices, strats, required_buy_strats=[], required_sell_strats=[]):
     ''' stratsの全組み合わせでシミュレート '''
-    buy_strats  = required_buy_strats
-    sell_strats = required_sell_strats
+
 
     results = pd.DataFrame(data=prices, index=dates)
 
     for buy_strat in strats:
         for sell_strat in strats:
-            ustrat = CombinationStrategy(buy_strats + [buy_strat], sell_strats + [sell_strat])
-            r = simulate_trade(ustrat, dates, prices)
+            buy_strats  = required_buy_strats
+            sell_strats = required_sell_strats
+
+            r = simulate_trade(dates, prices, CombinationStrategy(buy_strats, sell_strats))
             results = pd.concat([results, r], axis=1)
 
     return results

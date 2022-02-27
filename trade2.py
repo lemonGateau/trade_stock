@@ -1,21 +1,18 @@
 import sys
-from unicodedata import name
-from unittest import result
 sys.path.append("..")
 import os
 
 from pandas_datareader import data
 import pandas as pd
 from datetime import *
+from time import time
 
 from common.print_funcs import *
-from common.profit_funcs import *
 from common.plot_funcs import  plot_df
 from common.indicator_funcs import *
 
 from util import *
 from io_data import *
-from simulater import *
 from simulater2 import Simulater
 
 # ImportError: attempted relative import with no known parent package
@@ -25,6 +22,8 @@ except:
     from indicators import *
 
 def main():
+    start_time = time()
+
     SHORT_TERM       = 12
     LONG_TERM        = 25
     MACD_SIGNAL_TERM = 9
@@ -42,9 +41,12 @@ def main():
 
     symbol = "BTC-JPY"
 
+    """
     # 日足より短
     RANGE    = "3d"
     INTERVAL = "5m"
+
+    print(time() - start_time, "begin_fetch")
 
     bars = fetch_yahoo_short_bars(symbol, RANGE, INTERVAL)
     begin = bars.index[0]
@@ -53,11 +55,13 @@ def main():
     """
     # 日足以上長
     SOURCE  = "yahoo"
-    begin = datetime(2017, 1, 1)
+    begin = datetime(2016, 1, 1)
     end   = datetime.today()
 
     bars = data.DataReader(symbol, SOURCE, begin, end)
-    """
+
+
+    print(time() - start_time, "end_fetch")
 
     close = bars["Adj Close"]
 
@@ -99,7 +103,7 @@ def main():
     fp = FinalizedProfit(close, PROFIT_RATIO, LOSS_RATIO)
 
 
-    SAVE_DIR = f"C:\\Users\\manab\\github_\\trade_stock\\csv_files\\{datetime.now().strftime('%Y%m%d_%H%M')}"
+    SAVE_DIR = f"C:\\Users\\manab\\github_\\trade_stock\\csv_db\\{datetime.now().strftime('%Y%m%d_%H%M')}"
     os.mkdir(path = SAVE_DIR)
 
     """
@@ -114,11 +118,12 @@ def main():
 
     bars.to_csv(SAVE_DIR + "\\bars.csv", index=True, encoding="utf-8")
     """
-
+    print(time() - start_time, "end_bars")
 # ---------------------------------------------------------------
     # シミュレーション
     # ToDo: 実行速度(2022-02-26: 16s)
     sim = Simulater(symbol, begin, end)
+    print(time() - start_time, "simulating0...")
 
     strats = (sma_cross, ema_cross, macd_cross, bbands2, bbands3, dmi, momentum, rsi)
 
@@ -128,11 +133,15 @@ def main():
         orders = sim.simulate_trade(close, strat)
         results[orders.name] = orders
     """
+    print(time() - start_time, "simulating1...")
 
     results = sim.simulate_comb_strats_trade(close, strats, [], [])
 
+    print(time() - start_time, "simulating2...")
+
     results.to_csv(SAVE_DIR + "\\orders.csv", index=True, encoding="utf-8")
 
+    print(time() - start_time, "end_simulate")
 # ---------------------------------------------------------------
     # 利益計算
     profits = pd.DataFrame()
@@ -141,17 +150,14 @@ def main():
         # print(result, end="\n\n")
 
         profit = sim.compute_profit(result)
-        sorted = profits.append(profit)
+        profits = profits.append(profit)
 
-    #sorted = profits.sort_values(by="profit", ascending=False)
-
-    amount = 0.01
-    sorted[str(amount)] = sorted["profit"] * amount
+    sorted = profits.sort_values(by="profit", ascending=False)
     sorted.to_csv(SAVE_DIR + "\\profits.csv", index=True, encoding="utf-8")
 
-    # print_extract_strats_df(d, "", "dmi")
-    # print_extract_strats_df(d, "dmi", "")
+    # print(sim.extract_strat_profits(profits, "macd"))
 
+    print(time() - start_time, "end_profits")
 # ---------------------------------------------------------------
     # プロット
     # for strat in strats:
