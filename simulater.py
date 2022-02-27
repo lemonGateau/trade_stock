@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 from common.print_funcs import *
-from io_data import fetch_yahoo_short_bars
+from common.io_data import fetch_yahoo_short_bars
 
 # ImportError: attempted relative import with no known parent package
 try:

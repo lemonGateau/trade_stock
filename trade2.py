@@ -1,4 +1,5 @@
 import sys
+from unittest import result
 sys.path.append("..")
 import os
 
@@ -10,9 +11,9 @@ from time import time
 from common.print_funcs import *
 from common.plot_funcs import  plot_df
 from common.indicator_funcs import *
+from common.util import *
+from common.io_data import *
 
-from util import *
-from io_data import *
 from simulater2 import Simulater
 
 # ImportError: attempted relative import with no known parent package
@@ -22,7 +23,7 @@ except:
     from indicators import *
 
 def main():
-    start_time = time()
+    begin_time = time()
 
     SHORT_TERM       = 12
     LONG_TERM        = 25
@@ -36,8 +37,11 @@ def main():
 
     PROFIT_RATIO     = 0.2
     LOSS_RATIO       = 0.05
-    RSI_SELL_RATIO   = 0.7
-    RSI_BUY_RATIO    = 0.3
+    RSI_SELL_RATIO   = 0.8
+    RSI_BUY_RATIO    = 0.2
+
+    EXPORT_DIR = f"C:\\Users\\manab\\github_\\trade_stock\\csv_db\\{datetime.now().strftime('%Y%m%d_%H%M')}"
+    os.mkdir(path = EXPORT_DIR)
 
     symbol = "BTC-JPY"
 
@@ -55,13 +59,10 @@ def main():
     """
     # 日足以上長
     SOURCE  = "yahoo"
-    begin = datetime(2016, 1, 1)
+    begin = datetime(2020, 1, 1)
     end   = datetime.today()
 
     bars = data.DataReader(symbol, SOURCE, begin, end)
-
-
-    print(time() - start_time, "end_fetch")
 
     close = bars["Adj Close"]
 
@@ -102,10 +103,6 @@ def main():
 
     fp = FinalizedProfit(close, PROFIT_RATIO, LOSS_RATIO)
 
-
-    SAVE_DIR = f"C:\\Users\\manab\\github_\\trade_stock\\csv_db\\{datetime.now().strftime('%Y%m%d_%H%M')}"
-    os.mkdir(path = SAVE_DIR)
-
     """
     dmi_bar = dmi.build_df_indicator()
     bb2_bar = bbands2.build_df_indicator()
@@ -118,52 +115,35 @@ def main():
 
     bars.to_csv(SAVE_DIR + "\\bars.csv", index=True, encoding="utf-8")
     """
-    print(time() - start_time, "end_bars")
 # ---------------------------------------------------------------
     # シミュレーション
-    # ToDo: 実行速度(2022-02-26: 16s)
-    sim = Simulater(symbol, begin, end)
-    print(time() - start_time, "simulating0...")
+    sim = Simulater()
+    sim.print_simulation_conditions(symbol, begin, end)
 
     strats = (sma_cross, ema_cross, macd_cross, bbands2, bbands3, dmi, momentum, rsi)
 
-    """
-    results = pd.DataFrame(data=close, index=close.index)
-    for strat in strats:
-        orders = sim.simulate_trade(close, strat)
-        results[orders.name] = orders
-    """
-    print(time() - start_time, "simulating1...")
+    # ToDo: 実行速度(2022-02-26: 10s)
+    results = sim.simulate_strats(close, strats)
+    #results = sim.simulate_combination_strats(close, strats, [], [])
 
-    results = sim.simulate_comb_strats_trade(close, strats, [], [])
+    results.to_csv(EXPORT_DIR + "\\order_histories.csv", index=True, encoding="utf-8")
 
-    print(time() - start_time, "simulating2...")
-
-    results.to_csv(SAVE_DIR + "\\orders.csv", index=True, encoding="utf-8")
-
-    print(time() - start_time, "end_simulate")
 # ---------------------------------------------------------------
     # 利益計算
-    profits = pd.DataFrame()
-    for strat_name in results.columns.values[1:]:
-        result = results.loc[:, ["Adj Close", strat_name]].dropna()
-        # print(result, end="\n\n")
+    profits = sim.compute_profits(close, results)
 
-        profit = sim.compute_profit(result)
-        profits = profits.append(profit)
-
-    sorted = profits.sort_values(by="profit", ascending=False)
-    sorted.to_csv(SAVE_DIR + "\\profits.csv", index=True, encoding="utf-8")
+    profits.to_csv(EXPORT_DIR + "\\profits.csv", index=True, encoding="utf-8")
 
     # print(sim.extract_strat_profits(profits, "macd"))
 
-    print(time() - start_time, "end_profits")
+
+
 # ---------------------------------------------------------------
     # プロット
     # for strat in strats:
         # strat.plot_df_indicator()
 
-
+    print(time() - begin_time)
 
 
 if __name__ == '__main__':
