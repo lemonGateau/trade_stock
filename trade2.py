@@ -1,5 +1,4 @@
 import sys
-from unittest import result
 sys.path.append("..")
 import os
 
@@ -43,26 +42,28 @@ def main():
     EXPORT_DIR = f"C:\\Users\\manab\\github_\\trade_stock\\csv_db\\{datetime.now().strftime('%Y%m%d_%H%M')}"
     os.mkdir(path = EXPORT_DIR)
 
+    """
+    RANGES    = ("10d", "30d", "100d")
+    INTERVALS = ("5m" , "15m", "1h")
+    """
     symbol = "BTC-JPY"
 
-    """
     # 日足より短
-    RANGE    = "3d"
-    INTERVAL = "5m"
-
-    print(time() - start_time, "begin_fetch")
+    RANGE    = "30d"
+    INTERVAL = "1h"
 
     bars = fetch_yahoo_short_bars(symbol, RANGE, INTERVAL)
-    begin = bars.index[0]
-    end   = bars.index[-1]
+    BEGIN = bars.index[0]
+    END   = bars.index[-1]
 
     """
     # 日足以上長
     SOURCE  = "yahoo"
-    begin = datetime(2020, 1, 1)
-    end   = datetime.today()
+    BEGIN = datetime(2020, 1, 1)
+    END   = datetime.today()
 
-    bars = data.DataReader(symbol, SOURCE, begin, end)
+    bars = data.DataReader(symbol, SOURCE, BEGIN, END)
+    """
 
     close = bars["Adj Close"]
 
@@ -102,7 +103,6 @@ def main():
     rsi.compute_rsi(close, RSI_TERM)
 
     fp = FinalizedProfit(close, PROFIT_RATIO, LOSS_RATIO)
-
     """
     dmi_bar = dmi.build_df_indicator()
     bb2_bar = bbands2.build_df_indicator()
@@ -113,28 +113,29 @@ def main():
     bars = pd.concat([bars, dmi_bar, bb2_bar, bb3_bar, mom_bar, rsi_bar], axis=1)
     bars = bars.loc[:, ~bars.columns.duplicated()]    # 重複列を削除
 
-    bars.to_csv(SAVE_DIR + "\\bars.csv", index=True, encoding="utf-8")
+    bars.to_csv(EXPORT_DIR + "\\bars.csv", index=True, encoding="utf-8")
     """
+
+# ToDo: 実行速度短縮
 # ---------------------------------------------------------------
     # シミュレーション
-    sim = Simulater()
-    sim.print_simulation_conditions(symbol, begin, end)
+    sim = Simulater(close.index, close)
+    sim.print_simulation_conditions(symbol, BEGIN, END)
 
     strats = (sma_cross, ema_cross, macd_cross, bbands2, bbands3, dmi, momentum, rsi)
 
-    # ToDo: 実行速度(2022-02-26: 10s)
-    results = sim.simulate_strats(close, strats)
-    #results = sim.simulate_combination_strats(close, strats, [], [])
+    # results= sim.simulate_strats(strats)
+    results = sim.simulate_combination_strats(strats, [], [])
 
-    results.to_csv(EXPORT_DIR + "\\order_histories.csv", index=True, encoding="utf-8")
+    results.to_csv(EXPORT_DIR + "\\histories.csv", index=True, encoding="utf-8")
 
 # ---------------------------------------------------------------
     # 利益計算
-    profits = sim.compute_profits(close, results)
+    profits = sim.compute_profits(results)
 
     profits.to_csv(EXPORT_DIR + "\\profits.csv", index=True, encoding="utf-8")
 
-    # print(sim.extract_strat_profits(profits, "macd"))
+    print(sim.extract_strat_profits(profits, ""))
 
 
 

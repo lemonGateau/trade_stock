@@ -16,8 +16,9 @@ except:
 
 
 class Simulater:
-    def __init__(self):
-        pass
+    def __init__(self, dates, prices):
+        self.dates  = dates
+        self.prices = pd.Series(data=prices, index=dates, name="Price")
 
     def print_simulation_conditions(self, symbol, begin, end):
         print(symbol, end="  ")
@@ -25,32 +26,33 @@ class Simulater:
         print_df_date(end)
         print("\n")
 
-    def _simulate_trade(self, prices, strat):
+
+    def _simulate_trade(self, strat):
         strat.set_latest_buy_price(None) # 初期化に必要
 
-        orders = [np.nan]*len(prices)
+        orders = {}
 
-        for i in range(1, len(prices)):
+        for i, date in enumerate(self.dates[1:], 1):
             if strat.should_buy(i):
-                strat.set_latest_buy_price(prices[i])
-                orders[i] = "bid"
+                strat.set_latest_buy_price(self.prices[i])
+                orders[date] = "bid"
 
             elif strat.should_sell(i):
                 strat.set_latest_buy_price(None)
-                orders[i] = "ask"
+                orders[date] = "ask"
 
-        return pd.Series(orders, index=prices.index, name=strat.get_strategy_name())
+        return pd.Series(orders, name=strat.get_strategy_name())
 
-    def simulate_strats(self, prices, strats):
+    def simulate_strats(self, strats):
         results = []
 
         for strat in strats:
-            results.append(self._simulate_trade(prices, strat))
+            results.append(self._simulate_trade(strat))
 
-        return pd.DataFrame(results, columns=prices.index).T
+        return pd.DataFrame(results, columns=self.dates).T.dropna(how="all")
 
 
-    def simulate_combination_strats(self, prices, strats, required_buy_strats=[], required_sell_strats=[]):
+    def simulate_combination_strats(self, strats, required_buy_strats=[], required_sell_strats=[]):
         ''' stratsの全組み合わせでシミュレート '''
         results = []
 
@@ -61,33 +63,31 @@ class Simulater:
 
                 strat = CombinationStrategy(buy_strats, sell_strats)
 
-                results.append(self._simulate_trade(prices, strat))
+                results.append(self._simulate_trade(strat))
 
-        return pd.DataFrame(results, columns=prices.index).T
+        return pd.DataFrame(results, columns=self.dates).T.dropna(how="all")
 
 
     def _compute_profit(self, result):
-        result = result[:].dropna()
+        strat_name = result.name
 
-        strat_name = result.columns.values[-1]
+        result = pd.concat([self.prices, result], axis=1)
 
-        bids = result.loc[result[strat_name] == "bid", "Adj Close"]
-        asks = result.loc[result[strat_name] == "ask", "Adj Close"]
+        bids = result.loc[result[strat_name] == "bid", "Price"]
+        asks = result.loc[result[strat_name] == "ask", "Price"]
 
         profit = int(sum(asks) - sum(bids[:len(asks)]))
 
         return pd.Series([profit, len(bids), len(asks)], \
             index=["profit", "bid_count", "ask_count"], name=strat_name)
 
-    def compute_profits(self, close, results):
+
+    def compute_profits(self, results):
         profits = []
 
-        results = pd.concat([close, results], axis=1)
-
-        for strat_name in results.columns.values[1:]:
-            result = results.loc[:, ["Adj Close", strat_name]].dropna()
-
-            profits.append(self._compute_profit(result))
+        for strat_name in results.columns.values:
+            profit = self._compute_profit(results[strat_name])
+            profits.append(profit)
 
         return pd.DataFrame(profits).sort_values(by="profit", ascending=False)
 
