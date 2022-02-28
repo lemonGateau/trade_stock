@@ -4,10 +4,6 @@ sys.path.append("..")
 from pandas_datareader import data
 import pandas as pd
 import numpy as np
-from time import time
-
-from common.print_funcs import *
-from common.io_data import fetch_yahoo_short_bars
 
 try:
     from ..indicators import *
@@ -17,8 +13,25 @@ except:
 
 class Simulater:
     def __init__(self, dates, prices):
-        self.dates  = dates
-        self.prices = pd.Series(data=prices, index=dates, name="Price")
+        self.dates   = dates
+        self.prices  = pd.Series(data=prices, index=dates, name="Price")
+        self.hists   = None 
+        self.profits = None
+
+    def simulate_strats_trade(self, strats):
+        hists   = []
+        profits = []
+
+        for strat in strats:
+            hist   = self._simulate_trade(strat)
+            profit = self._compute_profit(hist)
+
+            hists.append(hist)
+            profits.append(profit)
+
+        self.hists   = pd.DataFrame(hists, columns=self.dates).T.dropna(how="all")
+        self.profits = pd.DataFrame(profits).sort_values(by="profit", ascending=False)
+
 
     def _simulate_trade(self, strat):
         strat.set_latest_buy_price(None) # 初期化に必要
@@ -37,40 +50,6 @@ class Simulater:
         return pd.Series(orders, name=strat.get_strategy_name())
 
 
-    def simulate_strats(self, strats):
-        hists   = [self.prices]
-        profits = []
-
-        for strat in strats:
-            hist   = self._simulate_trade(strat)
-            profit = self._compute_profit(hist)
-
-            hists.append(hist)
-            profits.append(profit)
-
-        self.hists = pd.DataFrame(hists, columns=self.dates).dropna(axis=1, how="all").T
-
-    def simulate_combination_strats(self, strats, required_buy_strats=[], required_sell_strats=[]):
-        ''' stratsの全組み合わせでシミュレート '''
-        hists   = [self.prices]
-        profits = []
-
-        for buy_strat in strats:
-            for sell_strat in strats:
-                buy_strats  = required_buy_strats  + [buy_strat]
-                sell_strats = required_sell_strats + [sell_strat]
-
-                strat = CombinationStrategy(buy_strats, sell_strats)
-
-                hist   = self._simulate_trade(strat)
-                profit = self._compute_profit(hist)
-
-                hists.append(hist)
-                profits.append(profit)
-
-        self.hists = pd.DataFrame(hists, columns=self.dates).dropna(axis=1, how="all").T
-
-
     def _compute_profit(self, hist):
         strat_name = hist.name
 
@@ -85,18 +64,9 @@ class Simulater:
             index=["profit", "bid_count", "ask_count"], name=strat_name)
 
 
-    def compute_profits(self):
-        profits = []
-
-        for strat_name in self.hists.columns.values:
-            profit = self._compute_profit(self.hists[strat_name])
-            profits.append(profit)
-
-        self.profits = pd.DataFrame(profits).sort_values(by="profit", ascending=False)
-
     def extract_hists(self, extract_str=""):
         ''' extract_str = "" -> return self.hists '''
-        return self.hists.loc[self.hists.columns.str.contains(extract_str)]
+        return self.hists.loc[:, self.hists.columns.str.contains(extract_str)]
 
     def extract_profits(self, extract_str=""):
         ''' extract_str = "" -> return self.profits '''
@@ -108,3 +78,20 @@ class Simulater:
 
     def export_profits(self, path, index=True, encoding="utf-8"):
         self.profits.to_csv(path, index=index, encoding=encoding)
+
+    def get_hists(self):
+        return self.hists
+
+    def get_profits(self):
+        return self.profits
+
+    """
+    def compute_profits(self):
+        profits = []
+
+        for strat_name in self.hists.columns.values:
+            profit = self._compute_profit(self.hists[strat_name])
+            profits.append(profit)
+
+        self.profits = pd.DataFrame(profits).sort_values(by="profit", ascending=False)
+    """

@@ -38,8 +38,7 @@ def main():
     RSI_SELL_RATIO   = 0.8
     RSI_BUY_RATIO    = 0.2
 
-    EXPORT_DIR = f"C:\\Users\\manab\\github_\\trade_stock\\csv_db\\{datetime.now().strftime('%Y%m%d_%H%M_%S')}"
-    
+    EXPORT_DIR = f"C:\\Users\\manab\\github_\\trade_stock\\csv_db\\{datetime.now().strftime('%Y%m%d_%H%M')}"
     os.mkdir(path = EXPORT_DIR)
 
     """
@@ -48,7 +47,6 @@ def main():
     """
     symbol = "BTC-JPY"
 
-    """
     # 日足より短
     RANGE    = "30d"
     INTERVAL = "5m"
@@ -60,11 +58,11 @@ def main():
     """
     # 日足以上長
     SOURCE  = "yahoo"
-    BEGIN = datetime(2010, 1, 1)
+    BEGIN = datetime(2022, 1, 1)
     END   = datetime.today()
 
     bars = data.DataReader(symbol, SOURCE, BEGIN, END)
-
+    """
     print_reference_data_period(symbol, BEGIN, END)
 
     close = bars["Adj Close"]
@@ -119,9 +117,8 @@ def main():
     bars.to_csv(EXPORT_DIR + "\\bars.csv", index=True, encoding="utf-8")
     """
 
-# ToDo: 実行速度短縮
 # ---------------------------------------------------------------
-    # シミュレーション
+    # 作戦決定
     strats = (sma_cross, ema_cross, macd_cross, bbands2, bbands3, dmi, momentum, rsi)
     comb_strats = []
 
@@ -129,13 +126,16 @@ def main():
         for ask_strat in strats:
             comb_strats.append(CombinationStrategy([bid_strat], [ask_strat]))
 
+
+# ToDo: 実行速度短縮
+# ---------------------------------------------------------------
+    # シミュレーション
     sim = Simulater(close.index, close)
-    # sim.simulate_strats(strats)
-    sim.simulate_strats(comb_strats)
-    # sim.simulate_combination_strats(strats, [], [])
-    sim.compute_profits()
+
+    sim.simulate_strats_trade(comb_strats)
 
     print(sim.extract_hists())
+    print(sim.get_profits)
     print(sim.extract_profits())
 
     sim.export_hists(EXPORT_DIR + "\\histories.csv")
