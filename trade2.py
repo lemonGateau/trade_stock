@@ -13,6 +13,7 @@ from common.indicator_funcs import *
 from common.util import *
 from common.io_data import *
 
+#from simulater2 import Simulater
 from simulater2 import Simulater
 
 # ImportError: attempted relative import with no known parent package
@@ -22,8 +23,6 @@ except:
     from indicators import *
 
 def main():
-    begin_time = time()
-
     SHORT_TERM       = 12
     LONG_TERM        = 25
     MACD_SIGNAL_TERM = 9
@@ -39,7 +38,8 @@ def main():
     RSI_SELL_RATIO   = 0.8
     RSI_BUY_RATIO    = 0.2
 
-    EXPORT_DIR = f"C:\\Users\\manab\\github_\\trade_stock\\csv_db\\{datetime.now().strftime('%Y%m%d_%H%M')}"
+    EXPORT_DIR = f"C:\\Users\\manab\\github_\\trade_stock\\csv_db\\{datetime.now().strftime('%Y%m%d_%H%M_%S')}"
+    
     os.mkdir(path = EXPORT_DIR)
 
     """
@@ -48,9 +48,10 @@ def main():
     """
     symbol = "BTC-JPY"
 
+    """
     # 日足より短
     RANGE    = "30d"
-    INTERVAL = "1h"
+    INTERVAL = "5m"
 
     bars = fetch_yahoo_short_bars(symbol, RANGE, INTERVAL)
     BEGIN = bars.index[0]
@@ -59,11 +60,12 @@ def main():
     """
     # 日足以上長
     SOURCE  = "yahoo"
-    BEGIN = datetime(2020, 1, 1)
+    BEGIN = datetime(2010, 1, 1)
     END   = datetime.today()
 
     bars = data.DataReader(symbol, SOURCE, BEGIN, END)
-    """
+
+    print_reference_data_period(symbol, BEGIN, END)
 
     close = bars["Adj Close"]
 
@@ -103,6 +105,7 @@ def main():
     rsi.compute_rsi(close, RSI_TERM)
 
     fp = FinalizedProfit(close, PROFIT_RATIO, LOSS_RATIO)
+
     """
     dmi_bar = dmi.build_df_indicator()
     bb2_bar = bbands2.build_df_indicator()
@@ -119,24 +122,24 @@ def main():
 # ToDo: 実行速度短縮
 # ---------------------------------------------------------------
     # シミュレーション
-    sim = Simulater(close.index, close)
-    sim.print_simulation_conditions(symbol, BEGIN, END)
-
     strats = (sma_cross, ema_cross, macd_cross, bbands2, bbands3, dmi, momentum, rsi)
+    comb_strats = []
 
-    # results= sim.simulate_strats(strats)
-    results = sim.simulate_combination_strats(strats, [], [])
+    for bid_strat in strats:
+        for ask_strat in strats:
+            comb_strats.append(CombinationStrategy([bid_strat], [ask_strat]))
 
-    results.to_csv(EXPORT_DIR + "\\histories.csv", index=True, encoding="utf-8")
+    sim = Simulater(close.index, close)
+    # sim.simulate_strats(strats)
+    sim.simulate_strats(comb_strats)
+    # sim.simulate_combination_strats(strats, [], [])
+    sim.compute_profits()
 
-# ---------------------------------------------------------------
-    # 利益計算
-    profits = sim.compute_profits(results)
+    print(sim.extract_hists())
+    print(sim.extract_profits())
 
-    profits.to_csv(EXPORT_DIR + "\\profits.csv", index=True, encoding="utf-8")
-
-    print(sim.extract_strat_profits(profits, ""))
-
+    sim.export_hists(EXPORT_DIR + "\\histories.csv")
+    sim.export_profits(EXPORT_DIR + "\\profits.csv")
 
 
 # ---------------------------------------------------------------
@@ -144,9 +147,11 @@ def main():
     # for strat in strats:
         # strat.plot_df_indicator()
 
-    print(time() - begin_time)
+
+
 
 
 if __name__ == '__main__':
+    begin_time = time()
     main()
-
+    print(time() - begin_time)
