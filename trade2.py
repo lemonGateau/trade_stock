@@ -13,7 +13,6 @@ from common.indicator_funcs import *
 from common.util import *
 from common.io_data import *
 
-#from simulater2 import Simulater
 from simulater2 import Simulater
 
 # ImportError: attempted relative import with no known parent package
@@ -48,7 +47,7 @@ def main():
     symbol = "BTC-JPY"
 
     # 日足より短
-    RANGE    = "30d"
+    RANGE    = "3d"
     INTERVAL = "5m"
 
     bars = fetch_yahoo_short_bars(symbol, RANGE, INTERVAL)
@@ -73,7 +72,7 @@ def main():
     bars["ema_short"]   = generate_ema(close, SHORT_TERM)
     bars["ema_long"]    = generate_ema(close, LONG_TERM)
 
-    bars["macd"]        = bars["ema_short"] - bars["ema_long"] 
+    bars["macd"]        = bars["ema_short"] - bars["ema_long"]
     bars["macd_signal"] = generate_sma(bars["macd"], MACD_SIGNAL_TERM)
 
     sma_cross  = Cross(bars["sma_short"], bars["sma_long"])
@@ -87,12 +86,18 @@ def main():
     bbands2 = BollingerBands(close, B_BANDS_TERM)
     bbands3 = BollingerBands(close, B_BANDS_TERM)
 
-    bbands2.set_upper(coef=2)
-    bbands2.set_lower(coef=2)
+    bbands2.generate_upper(coef=2)
+    bbands2.generate_lower(coef=2)
     bbands2.set_strategy_name("bb2")
     bbands3.set_strategy_name("bb3")
 
     dmi = Dmi(close, bars["High"], bars["Low"], ADX_TERM, ADXR_TERM)
+    dmi.compute_tr()
+    dmi.compute_dms()
+    dmi.compute_dis(ADX_TERM)
+    dmi.compute_dx()
+    dmi.compute_adx(ADX_TERM)
+    dmi.compute_adxr(ADXR_TERM)
 
     momentum = Momentum()
     momentum.compute_moment(close, MOMENTUM_TERM)
@@ -104,7 +109,6 @@ def main():
 
     fp = FinalizedProfit(close, PROFIT_RATIO, LOSS_RATIO)
 
-    """
     dmi_bar = dmi.build_df_indicator()
     bb2_bar = bbands2.build_df_indicator()
     bb3_bar = bbands3.build_df_indicator()
@@ -114,8 +118,9 @@ def main():
     bars = pd.concat([bars, dmi_bar, bb2_bar, bb3_bar, mom_bar, rsi_bar], axis=1)
     bars = bars.loc[:, ~bars.columns.duplicated()]    # 重複列を削除
 
+    print(bars)
+
     bars.to_csv(EXPORT_DIR + "\\bars.csv", index=True, encoding="utf-8")
-    """
 
 # ---------------------------------------------------------------
     # 作戦決定
@@ -127,27 +132,24 @@ def main():
             comb_strats.append(CombinationStrategy([bid_strat], [ask_strat]))
 
 
-# ToDo: 実行速度短縮
+# ToDo: 実行速度短縮 & sim._simulate_trade(strat)を繰り返すべきか？
 # ---------------------------------------------------------------
     # シミュレーション
     sim = Simulater(close.index, close)
 
     sim.simulate_strats_trade(comb_strats)
+    sim.compute_profits()
 
-    print(sim.extract_hists())
-    print(sim.get_profits)
-    print(sim.extract_profits())
+    print(sim.hists)
+    print(sim.profits)
 
-    sim.export_hists(EXPORT_DIR + "\\histories.csv")
-    sim.export_profits(EXPORT_DIR + "\\profits.csv")
-
+    #hists.to_csv(EXPORT_DIR + "\\histories.csv", index=True)
+    #profits.to_csv(EXPORT_DIR + "\\profits.csv", index=True)
 
 # ---------------------------------------------------------------
     # プロット
-    # for strat in strats:
-        # strat.plot_df_indicator()
-
-
+    for strat in comb_strats:
+        strat.plot_df_indicator()
 
 
 
