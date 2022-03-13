@@ -8,7 +8,7 @@ from datetime import *
 from time import time
 
 from common.print_funcs import *
-from common.plot_funcs import  plot_df
+from common.plot_funcs import *
 from common.indicator_funcs import *
 from common.util import *
 from common.io_data import *
@@ -37,14 +37,16 @@ def main():
     RSI_SELL_RATIO   = 0.8
     RSI_BUY_RATIO    = 0.2
 
-    EXPORT_DIR = f"C:\\Users\\manab\\github_\\trade_stock\\csv_db\\{datetime.now().strftime('%Y%m%d_%H%M')}"
+    EXPORT_DIR = f"C:\\Users\\manab\\github_\\trade_stock\\csv_db\\{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     os.mkdir(path = EXPORT_DIR)
 
     """
     RANGES    = ("10d", "30d", "100d")
     INTERVALS = ("5m" , "15m", "1h")
     """
-    symbol = "BTC-JPY"
+
+    #symbol = "BTC-JPY"
+    symbol = "ETH-JPY"
 
     # 日足より短
     RANGE    = "3d"
@@ -62,6 +64,7 @@ def main():
 
     bars = data.DataReader(symbol, SOURCE, BEGIN, END)
     """
+
     print_reference_data_period(symbol, BEGIN, END)
 
     close = bars["Adj Close"]
@@ -118,18 +121,20 @@ def main():
     bars = pd.concat([bars, dmi_bar, bb2_bar, bb3_bar, mom_bar, rsi_bar], axis=1)
     bars = bars.loc[:, ~bars.columns.duplicated()]    # 重複列を削除
 
-    print(bars)
-
     bars.to_csv(EXPORT_DIR + "\\bars.csv", index=True, encoding="utf-8")
 
 # ---------------------------------------------------------------
     # 作戦決定
     strats = (sma_cross, ema_cross, macd_cross, bbands2, bbands3, dmi, momentum, rsi)
-    comb_strats = []
 
+    comb_strats = []
     for bid_strat in strats:
         for ask_strat in strats:
             comb_strats.append(CombinationStrategy([bid_strat], [ask_strat]))
+
+
+    strategies = strats
+    #strategies = comb_strats
 
 
 # ToDo: 実行速度短縮 & sim._simulate_trade(strat)を繰り返すべきか？
@@ -137,19 +142,22 @@ def main():
     # シミュレーション
     sim = Simulater(close.index, close)
 
-    sim.simulate_strats_trade(comb_strats)
+    sim.simulate_strats_trade(strategies)
     sim.compute_profits()
+    sim.plot_trade_hists(strategies)
 
-    print(sim.hists)
-    print(sim.profits)
+    hists   = sim.extract_hists("")
+    profits = sim.extract_profits("")
 
-    #hists.to_csv(EXPORT_DIR + "\\histories.csv", index=True)
-    #profits.to_csv(EXPORT_DIR + "\\profits.csv", index=True)
+    print(hists)
+    print(profits)
 
-# ---------------------------------------------------------------
-    # プロット
-    for strat in comb_strats:
-        strat.plot_df_indicator()
+    hists.to_csv(EXPORT_DIR + "\\histories.csv", index=True)
+    profits.to_csv(EXPORT_DIR + "\\profits.csv", index=True)
+
+
+
+
 
 
 
