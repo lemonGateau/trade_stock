@@ -14,7 +14,11 @@ def fetch_yahoo_short_bars(symbol, range, interval):
     return _extract_bars(js_data)
 
 def _generate_yahoo_finance_url(symbol="BTC-JPY", range="7d", interval="5m"):
-    ''' https://query1.finance.yahoo.com/v7/finance/chart/3666.T?range=1d&interval=5m&indicators=quote&includeTimestamp=true '''
+    '''
+    https://query1.finance.yahoo.com/v7/finance/chart/3666.T?range=1d&interval=5m&indicators=quote&includeTimestamp=true
+
+    "1d","5d","1mo","3mo","6mo","1y","2y","5y","10y","ytd","max"
+    '''
 
     PATH = "https://query1.finance.yahoo.com/v7/finance/chart"
 

@@ -45,9 +45,10 @@ def main():
     INTERVALS = ("5m" , "15m", "1h")
     """
 
-    #symbol = "BTC-JPY"
-    symbol = "ETH-JPY"
+    symbol = "BTC-JPY"
+    #symbol = "ETH-JPY"
 
+    """
     # 日足より短
     RANGE    = "3d"
     INTERVAL = "5m"
@@ -55,21 +56,20 @@ def main():
     bars = fetch_yahoo_short_bars(symbol, RANGE, INTERVAL)
     BEGIN = bars.index[0]
     END   = bars.index[-1]
-
     """
+
     # 日足以上長
     SOURCE  = "yahoo"
     BEGIN = datetime(2022, 1, 1)
     END   = datetime.today()
 
     bars = data.DataReader(symbol, SOURCE, BEGIN, END)
-    """
+
 
     print_reference_data_period(symbol, BEGIN, END)
 
     close = bars["Adj Close"]
 
-    # 取引戦略
     bars["sma_short"]   = generate_sma(close, SHORT_TERM)
     bars["sma_long"]    = generate_sma(close, LONG_TERM)
     bars["ema_short"]   = generate_ema(close, SHORT_TERM)
@@ -131,10 +131,11 @@ def main():
     for bid_strat in strats:
         for ask_strat in strats:
             comb_strats.append(CombinationStrategy([bid_strat], [ask_strat]))
+            comb_strats.append(CombinationStrategy([bid_strat], [ask_strat, fp]))
 
 
-    strategies = strats
-    #strategies = comb_strats
+    #strategies = strats
+    strategies = comb_strats
 
 
 # ToDo: 実行速度短縮 & sim._simulate_trade(strat)を繰り返すべきか？
@@ -149,15 +150,11 @@ def main():
     hists   = sim.extract_hists("")
     profits = sim.extract_profits("")
 
-    print(hists)
+    #print(hists)
     print(profits)
 
     hists.to_csv(EXPORT_DIR + "\\histories.csv", index=True)
     profits.to_csv(EXPORT_DIR + "\\profits.csv", index=True)
-
-
-
-
 
 
 

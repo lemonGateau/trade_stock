@@ -8,8 +8,11 @@ def print_prices(price_list):
 
     print("\n", end="")
 
-def print_reference_data_period(symbol, begin, end):
+def print_reference_data_period(symbol, begin, end, range="", interval=""):
     print(symbol, end="  ")
     print_df_date(begin)
     print_df_date(end)
+    print(range, end="  ")
+    print(interval, end="  ")
+
     print("\n")
