@@ -84,10 +84,11 @@ def main():
     momentum.generate_signal(conf.MOM_SIGNAL_TERM)
     momentum.generate_baseline(0)
 
-    rsi = Rsi(conf.RSI_SELL_RATIO, conf.RSI_BUY_RATIO)
+    rsi = Rsi()
     rsi.compute_rsi(close, conf.RSI_TERM)
 
-    fp = FinalizedProfit(close, conf.PROFIT_RATIO, conf.LOSS_RATIO)
+    fp = FinalizedProfit(close)
+
 
     """
     dmi_bar = dmi.build_df_indicator()
