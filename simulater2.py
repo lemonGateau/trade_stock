@@ -1,10 +1,8 @@
 import sys
-from common.plot_funcs import plot_df
 sys.path.append("..")
 
 from pandas_datareader import data
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 
 try:
@@ -98,10 +96,10 @@ class Simulater:
 
         ax[0].set_title(strat_name)
         ax[0].scatter(bids.index, bids, marker="o", s=14, c="green")
-        ax[0].scatter(asks.index, asks, marker="s", s=14, c="red")
+        ax[0].scatter(asks.index, asks, marker="o", s=14, c="red")
 
         for i, ind in enumerate(indicators):
-            ax[i].plot(ind, alpha=0.8)
+            ax[i].plot(ind, alpha=0.7)
             ax[i].grid(True)
             ax[i].legend(ind.columns, loc="upper left")
 

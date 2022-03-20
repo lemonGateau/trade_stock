@@ -8,10 +8,9 @@ from datetime import *
 from time import *
 
 from common.print_funcs import *
-from common.plot_funcs import *
-from common.indicator_funcs import *
 from common.util import *
 from common.io_data import *
+import config as conf
 
 from simulater2 import Simulater
 
@@ -22,21 +21,6 @@ except:
     from indicators import *
 
 def main():
-    SHORT_TERM       = 12
-    LONG_TERM        = 25
-    MACD_SIGNAL_TERM = 9
-    B_BANDS_TERM     = 25
-    ADX_TERM         = 14
-    ADXR_TERM        = 25
-    MOMENTUM_TERM    = 26
-    MOM_SIGNAL_TERM  = 10
-    RSI_TERM         = 14
-
-    PROFIT_RATIO     = 0.2
-    LOSS_RATIO       = 0.05
-    RSI_SELL_RATIO   = 0.8
-    RSI_BUY_RATIO    = 0.2
-
     SYMBOLS = ("BTC-JPY", "ETH-JPY")
     PERIODS = (("10d", "5m"), ("1mo", "15m"), ("4mo", "1h"), ("8y", "1d"), ("10y", "5d"))
 
@@ -65,51 +49,43 @@ def main():
 
             close = bars["Adj Close"]
 
-            bars["sma_short"]   = generate_sma(close, SHORT_TERM)
-            bars["sma_long"]    = generate_sma(close, LONG_TERM)
-            bars["ema_short"]   = generate_ema(close, SHORT_TERM)
-            bars["ema_long"]    = generate_ema(close, LONG_TERM)
+            cross_sma = CrossSma()
+            cross_ema = CrossEma()
+            cross_macd = CrossMacd()
 
-            bars["macd"]        = bars["ema_short"] - bars["ema_long"]
-            bars["macd_signal"] = generate_sma(bars["macd"], MACD_SIGNAL_TERM)
+            cross_sma.generate_smas(close, [conf.SHORT_TERM, conf.LONG_TERM])
+            cross_ema.generate_emas(close, [conf.SHORT_TERM, conf.LONG_TERM])
+            cross_macd.generate_macds(close, [conf.SHORT_TERM, conf.LONG_TERM], conf.MACD_SIGNAL_TERM)
 
-            sma_cross  = Cross(bars["sma_short"], bars["sma_long"])
-            ema_cross  = Cross(bars["ema_short"], bars["ema_long"])
-            macd_cross = Cross(bars["macd"]     , bars["macd_signal"])
-
-            sma_cross.set_strategy_name("sma")
-            ema_cross.set_strategy_name("ema")
-            macd_cross.set_strategy_name("macd")
-
-            bbands2 = BollingerBands(close, B_BANDS_TERM)
-            bbands3 = BollingerBands(close, B_BANDS_TERM)
+            bbands2 = BollingerBands(close, conf.BB_TERM)
+            bbands3 = BollingerBands(close, conf.BB_TERM)
 
             bbands2.generate_upper(coef=2)
             bbands2.generate_lower(coef=2)
             bbands2.set_strategy_name("bb2")
             bbands3.set_strategy_name("bb3")
 
-            dmi = Dmi(close, bars["High"], bars["Low"], ADX_TERM, ADXR_TERM)
-            dmi.compute_tr()
-            dmi.compute_dms()
-            dmi.compute_dis(ADX_TERM)
+            dmi = Dmi()
+            dmi.compute_tr(close,bars["High"], bars["Low"])
+            dmi.compute_dms(bars["High"], bars["Low"])
+            dmi.compute_dis(conf.ADX_TERM)
             dmi.compute_dx()
-            dmi.compute_adx(ADX_TERM)
-            dmi.compute_adxr(ADXR_TERM)
+            dmi.compute_adx(conf.ADX_TERM)
+            dmi.compute_adxr(conf.ADXR_TERM)
 
             momentum = Momentum()
-            momentum.compute_moment(close, MOMENTUM_TERM)
-            momentum.generate_signal(MOM_SIGNAL_TERM)
+            momentum.compute_moment(close, conf.MOM_TERM)
+            momentum.generate_signal(conf.MOM_SIGNAL_TERM)
             momentum.generate_baseline(0)
 
-            rsi = Rsi(RSI_SELL_RATIO, RSI_BUY_RATIO)
-            rsi.compute_rsi(close, RSI_TERM)
+            rsi = Rsi(conf.RSI_SELL_RATIO, conf.RSI_BUY_RATIO)
+            rsi.compute_rsi(close, conf.RSI_TERM)
 
-            fp = FinalizedProfit(close, PROFIT_RATIO, LOSS_RATIO)
+            fp = FinalizedProfit(close, conf.PROFIT_RATIO, conf.LOSS_RATIO)
 
         # ---------------------------------------------------------------
             # 作戦決定
-            strats = (sma_cross, ema_cross, macd_cross, bbands2, bbands3, dmi, momentum, rsi)
+            strats = (cross_sma, cross_ema, cross_macd, bbands2, bbands3, dmi, momentum, rsi)
 
             comb_strats = []
             for bid_strat in strats:
@@ -119,15 +95,23 @@ def main():
 
             strategies = comb_strats
 
+            """
+            strats_list = [[[dmi], [macd_cross, fp]], [[dmi], [sma_cross, fp]], \
+                [[momentum], [momentum]], [[bbands3], [ema_cross]], [[macd_cross], [dmi]]]
+
+            strategies = []
+            for strat in strats_list:
+                strategies.append(CombinationStrategy(strat[0], strat[1]))
+            """
+
 
             # シミュレーション
             sim = Simulater(close.index, close)
 
             sim.simulate_strats_trade(strategies)
             sim.compute_profits()
-            #sim.plot_trade_hists(strategies)
 
-            hists   = sim.extract_hists("")
+            #hists   = sim.extract_hists("")
             profits = sim.extract_profits("")
 
             #print(hists)
@@ -137,15 +121,29 @@ def main():
             profits.to_csv(EXPORT_DIR + "\\profits.csv", index=True)
 
             higher = pd.concat([higher, profits.head(5)])
-            lower  = pd.concat([lower,  profits.tail(5)])
+            higher.append(pd.Series(data=[0, 0, 0], name=""))
 
-            sleep(15)
+            #lower  = pd.concat([lower,  profits.tail(5)])
+
+            """
+            for strat in strats:
+                print(sim.extract_profits(strat.get_strategy_name() + "--"))
+                sleep(5)
+            """
+
+            sim.plot_trade_hists(strategies)
+
+            sleep(5)
+
 
         higher.to_csv(EXPORT_DIR + "\\higher" + symbol + ".csv", index=True)
-        lower.to_csv(EXPORT_DIR + "\\lower" + symbol + ".csv"  , index=True)
+        #lower.to_csv(EXPORT_DIR + "\\lower"   + symbol + ".csv", index=True)
 
         higher = higher[:0]
         lower  = lower[:0]
+
+
+
 
 
 if __name__ == '__main__':
