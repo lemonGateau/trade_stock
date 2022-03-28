@@ -29,12 +29,12 @@ def main():
     INTERVALS = ("5m" , "15m", "1h")
     """
 
-    symbol = "BTC-JPY"
-    #symbol = "ETH-JPY"
+    #symbol = "BTC-JPY"
+    symbol = "ETH-JPY"
 
 
     # 日足より短
-    RANGE    = "3d"
+    RANGE    = "7d"
     INTERVAL = "5m"
 
     bars = fetch_yahoo_short_bars(symbol, RANGE, INTERVAL)
@@ -44,15 +44,18 @@ def main():
     """
     # 日足以上長
     SOURCE  = "yahoo"
-    BEGIN = datetime(2022, 1, 1)
+    BEGIN = datetime(2021, 1, 2)
     END   = datetime.today()
 
     bars = data.DataReader(symbol, SOURCE, BEGIN, END)
     """
 
     print_reference_data_period(symbol, BEGIN, END)
+    print(bars)
 
     close = bars["Adj Close"]
+
+    close.to_csv(EXPORT_DIR + "\\close.csv", index=True, encoding="utf-8")
 
     cross_sma = CrossSma()
     cross_ema = CrossEma()
@@ -89,8 +92,6 @@ def main():
 
     fp = FinalizedProfit(close, conf.PROFIT_RATIO, conf.LOSS_RATIO)
 
-
-    """
     dmi_bar = dmi.build_df_indicator()
     bb2_bar = bbands2.build_df_indicator()
     bb3_bar = bbands3.build_df_indicator()
@@ -101,7 +102,6 @@ def main():
     bars = bars.loc[:, ~bars.columns.duplicated()]    # 重複列を削除
 
     bars.to_csv(EXPORT_DIR + "\\bars.csv", index=True, encoding="utf-8")
-    """
 
 # ---------------------------------------------------------------
     # 作戦決定
@@ -114,8 +114,8 @@ def main():
             comb_strats.append(CombinationStrategy([bid_strat], [ask_strat, fp]))
 
 
-    #strategies = strats
-    strategies = comb_strats
+    strategies = strats
+    #strategies = comb_strats
 
 
 # ToDo: 実行速度短縮 & sim._simulate_trade(strat)を繰り返すべきか？
@@ -135,7 +135,7 @@ def main():
     hists.to_csv(EXPORT_DIR + "\\histories.csv", index=True)
     profits.to_csv(EXPORT_DIR + "\\profits.csv", index=True)
 
-    sim.plot_trade_hists(strategies)
+    #sim.plot_trade_hists(strategies)
 
 
 

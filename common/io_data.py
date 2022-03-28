@@ -9,13 +9,14 @@ def fetch_yahoo_short_bars(symbol, range, interval):
     url = _generate_yahoo_finance_url(symbol, range, interval)
     
     r = requests.get(url, headers={'User-agent': 'Mozilla/5.0'})    # chromeからアクセス時のheaderにする
-    js_data = json.load(StringIO(r.text))
 
-    return _extract_bars(js_data)
+    r = json.load(StringIO(r.text))
+
+    return _extract_bars(r)
 
 def _generate_yahoo_finance_url(symbol="BTC-JPY", range="7d", interval="5m"):
     '''
-    https://query1.finance.yahoo.com/v7/finance/chart/3666.T?range=1d&interval=5m&indicators=quote&includeTimestamp=true
+    https://query1.finance.yahoo.com/v7/finance/chart/ETH_JPY?range=1d&interval=5m&indicators=quote&includeTimestamp=true
 
     "1d","5d","1mo","3mo","6mo","1y","2y","5y","10y","ytd","max"
     '''
@@ -26,14 +27,15 @@ def _generate_yahoo_finance_url(symbol="BTC-JPY", range="7d", interval="5m"):
 
 
 def _extract_bars(js_yahoo):
-    ohlcv = pd.DataFrame()
+    bars = pd.DataFrame()
 
-    ohlcv['Open']       = js_yahoo['chart']['result'][0]['indicators']['quote'][0]['open']
-    ohlcv['High']       = js_yahoo['chart']['result'][0]['indicators']['quote'][0]['high']
-    ohlcv['Low']        = js_yahoo['chart']['result'][0]['indicators']['quote'][0]['low']
-    ohlcv['Adj Close']  = js_yahoo['chart']['result'][0]['indicators']['quote'][0]['close']
-    ohlcv['Volume']     = js_yahoo['chart']['result'][0]['indicators']['quote'][0]['volume']
+    bars['Open']       = js_yahoo['chart']['result'][0]['indicators']['quote'][0]['open']
+    bars['High']       = js_yahoo['chart']['result'][0]['indicators']['quote'][0]['high']
+    bars['Low']        = js_yahoo['chart']['result'][0]['indicators']['quote'][0]['low']
+    bars['Adj Close']  = js_yahoo['chart']['result'][0]['indicators']['quote'][0]['close']
+    bars['Volume']     = js_yahoo['chart']['result'][0]['indicators']['quote'][0]['volume']
 
-    ohlcv.index = pd.to_datetime(js_yahoo['chart']['result'][0]['timestamp'], unit="s")
+    bars.index = pd.to_datetime(js_yahoo['chart']['result'][0]['timestamp'], unit="s", utc=True)
+    bars.index = bars.index.tz_convert("Asia/Tokyo")
 
-    return ohlcv.dropna()
+    return bars.dropna()
