@@ -9,7 +9,7 @@ from time import time
 
 from common.print_funcs import *
 from common.util import *
-from common.io_data import *
+
 import config as conf
 
 from simulater2 import Simulater
@@ -17,8 +17,11 @@ from simulater2 import Simulater
 # ImportError: attempted relative import with no known parent package
 try:
     from ..indicators import *
+    from ..yahoo_finance import YahooFinance
 except:
     from indicators import *
+    from yahoo_finance import YahooFinance
+
 
 def main():
     EXPORT_DIR = f"C:\\Users\\manab\\github_\\trade_stock\\csv_db\\{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -37,7 +40,9 @@ def main():
     RANGE    = "7d"
     INTERVAL = "5m"
 
-    bars = fetch_yahoo_short_bars(symbol, RANGE, INTERVAL)
+    yahoo = YahooFinance(symbol)
+    bars = yahoo.generate_ohlc(RANGE, INTERVAL)
+
     BEGIN = bars.index[0]
     END   = bars.index[-1]
 
@@ -134,8 +139,9 @@ def main():
 
     hists.to_csv(EXPORT_DIR + "\\histories.csv", index=True)
     profits.to_csv(EXPORT_DIR + "\\profits.csv", index=True)
-
     #sim.plot_trade_hists(strategies)
+
+
 
 
 
@@ -143,3 +149,9 @@ if __name__ == '__main__':
     begin_time = time()
     main()
     print(time() - begin_time)
+
+
+
+
+
+
