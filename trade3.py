@@ -1,4 +1,5 @@
 import sys
+from textwrap import shorten
 sys.path.append("..")
 import os
 
@@ -17,8 +18,10 @@ from simulater2 import Simulater
 # ImportError: attempted relative import with no known parent package
 try:
     from ..indicators import *
+    from ..yahoo_finance import YahooFinance
 except:
     from indicators import *
+    from yahoo_finance import YahooFinance
 
 def main():
     SYMBOLS = ("BTC-JPY", "ETH-JPY")
@@ -32,7 +35,9 @@ def main():
             EXPORT_DIR = f"C:\\Users\\manab\\github_\\trade_stock\\csv_db\\{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             os.mkdir(path = EXPORT_DIR)
 
-            bars = fetch_yahoo_short_bars(symbol, range, interval)
+            yahoo = YahooFinance(symbol)
+            bars = yahoo.generate_ohlc(range, interval)
+
             BEGIN = bars.index[0]
             END   = bars.index[-1]
 
@@ -47,41 +52,34 @@ def main():
 
             print_reference_data_period(symbol, BEGIN, END, range, interval)
 
-            close = bars["Adj Close"]
+            close = bars["Close"]
 
-            cross_sma = CrossSma()
-            cross_ema = CrossEma()
+            cross_sma  = CrossSma()
+            cross_ema  = CrossEma()
             cross_macd = CrossMacd()
+            cross_sma.generate_indicators(close , [conf.SHORT_TERM, conf.LONG_TERM])
+            cross_ema.generate_indicators(close , [conf.SHORT_TERM, conf.LONG_TERM])
+            cross_macd.generate_indicators(close, [conf.SHORT_TERM, conf.LONG_TERM], conf.MACD_SIGNAL_TERM)
 
-            cross_sma.generate_smas(close, [conf.SHORT_TERM, conf.LONG_TERM])
-            cross_ema.generate_emas(close, [conf.SHORT_TERM, conf.LONG_TERM])
-            cross_macd.generate_macds(close, [conf.SHORT_TERM, conf.LONG_TERM], conf.MACD_SIGNAL_TERM)
-
-            bbands2 = BollingerBands(close, conf.BB_TERM)
-            bbands3 = BollingerBands(close, conf.BB_TERM)
-
-            bbands2.generate_upper(coef=2)
-            bbands2.generate_lower(coef=2)
+            bbands2 = BollingerBands(close)
+            bbands2.generate_indicators(conf.BB_TERM, coef=2)
             bbands2.set_strategy_name("bb2")
+
+            bbands3 = BollingerBands(close)
+            bbands3.generate_indicators(conf.BB_TERM, coef=3)
             bbands3.set_strategy_name("bb3")
 
             dmi = Dmi()
-            dmi.compute_tr(close,bars["High"], bars["Low"])
-            dmi.compute_dms(bars["High"], bars["Low"])
-            dmi.compute_dis(conf.ADX_TERM)
-            dmi.compute_dx()
-            dmi.compute_adx(conf.ADX_TERM)
-            dmi.compute_adxr(conf.ADXR_TERM)
+            dmi.generate_indicators(close, bars["High"], bars["Low"], [conf.ADX_TERM, conf.ADXR_TERM])
 
             momentum = Momentum()
-            momentum.compute_moment(close, conf.MOM_TERM)
-            momentum.generate_signal(conf.MOM_SIGNAL_TERM)
-            momentum.generate_baseline(0)
+            momentum.generate_indicators(close, [conf.MOM_TERM, conf.MOM_SIGNAL_TERM], base_value=0)
 
-            rsi = Rsi(conf.RSI_SELL_RATIO, conf.RSI_BUY_RATIO)
-            rsi.compute_rsi(close, conf.RSI_TERM)
+            rsi = Rsi()
+            rsi.generate_indicators(close, conf.RSI_TERM, conf.RSI_SELL_RATIO, conf.RSI_BUY_RATIO)
 
-            fp = FinalizedProfit(close, conf.PROFIT_RATIO, conf.LOSS_RATIO)
+            fp = FinalizedProfit(close)
+            fp.generate_indicators(conf.PROFIT_RATIO, conf.LOSS_RATIO)
 
         # ---------------------------------------------------------------
             # 作戦決定
@@ -94,16 +92,6 @@ def main():
                     comb_strats.append(CombinationStrategy([bid_strat], [ask_strat, fp]))
 
             strategies = comb_strats
-
-            """
-            strats_list = [[[dmi], [macd_cross, fp]], [[dmi], [sma_cross, fp]], \
-                [[momentum], [momentum]], [[bbands3], [ema_cross]], [[macd_cross], [dmi]]]
-
-            strategies = []
-            for strat in strats_list:
-                strategies.append(CombinationStrategy(strat[0], strat[1]))
-            """
-
 
             # シミュレーション
             sim = Simulater(close.index, close)
@@ -121,26 +109,15 @@ def main():
             profits.to_csv(EXPORT_DIR + "\\profits.csv", index=True)
 
             higher = pd.concat([higher, profits.head(5)])
-            higher.append(pd.Series(data=[0, 0, 0], name=""))
 
-            #lower  = pd.concat([lower,  profits.tail(5)])
-
-            """
-            for strat in strats:
-                print(sim.extract_profits(strat.get_strategy_name() + "--"))
-                sleep(5)
-            """
-
-            sim.plot_trade_hists(strategies)
+            #sim.plot_trade_hists(strategies)
 
             sleep(5)
 
 
         higher.to_csv(EXPORT_DIR + "\\higher" + symbol + ".csv", index=True)
-        #lower.to_csv(EXPORT_DIR + "\\lower"   + symbol + ".csv", index=True)
 
         higher = higher[:0]
-        lower  = lower[:0]
 
 
 

@@ -83,7 +83,7 @@ class Simulater:
             hist = self.extract_hists(strat_name)
             bids, asks = self.adjust_hist(hist)
 
-            self._plot_trade_hist(bids, asks, strat.build_df_indicator(), strat_name)
+            self._plot_trade_hist(bids, asks, strat.build_indicators(), strat_name)
 
     def _plot_trade_hist(self, bids, asks, indicators, strat_name="trade"):
         if type(indicators) is list:
